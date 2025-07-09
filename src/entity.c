@@ -28,6 +28,19 @@ Private void print_mask_entity(mask m) {
   printf("\n");
 }
 
+Private bool entity_has_equal_id(Entity *entity, int32 id) {
+  return entity->id == id;
+}
+
+Private Entity* find_free_entity() {
+  Entity *entity      = &entityManager.entities[0];
+  Entity *lastAddress = &entityManager.entities[Arr_Size(entityManager.entities)];
+  WhileTrue (entity->alloced && entity++ < lastAddress);
+  IfTrue (entity->alloced) assert(false && "Max cap reached for allocate entities");
+
+  return entity;  
+}
+
 /*
  * Definitions of public members...
  */
@@ -55,10 +68,7 @@ Public void clean_up_entity_manager() {
 }
 
 Public int32 add_entity() {
-  Entity *entity      = &entityManager.entities[0];
-  Entity *lastAddress = &entityManager.entities[Arr_Size(entityManager.entities)];
-  WhileTrue (entity->alloced && entity++ < lastAddress);
-  IfTrue (entity->alloced) assert(false && "Max cap reached for allocate entities");
+  Entity *entity = find_free_entity();
   entity->alloced = true;
   entity->id      = entityManager.idxCounter++;
   entityManager.nbEntities++;
@@ -66,7 +76,12 @@ Public int32 add_entity() {
 }
 
 Public Entity *get_entity(int32 id) {
-  return &entityManager.entities[id];
+  ForEach(Entity *, entity, entityManager.entities) {
+    IfTrue (entity_has_equal_id(entity, id)) {
+      return entity;
+    }
+  } EForEach;
+  return Null_Entity;
 }
 
 Public void remove_entity(int32 id) {

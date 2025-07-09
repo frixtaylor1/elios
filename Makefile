@@ -27,8 +27,11 @@ $(BIN_DIR)/main.o: $(SRC_DIR)/main.c
 $(BIN_DIR)/entity.o: $(SRC_DIR)/entity.c $(BIN_DIR)/alloc.o 
 	$(OBJ_COMMAND)
 
-$(BIN_DIR)/alloc.o: $(SRC_DIR)/alloc.c
+$(BIN_DIR)/alloc.o: $(SRC_DIR)/alloc.c $(BIN_DIR)/heap.o
 	$(OBJ_COMMAND)
+
+$(BIN_DIR)/heap.o: $(SRC_DIR)/heap.asm
+	nasm -f elf64 $^ -o $@
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
@@ -41,6 +44,3 @@ clean:
 
 run:
 	$(BIN)
-
-release: 
-	$(CC) -o $(BIN) $(OBJS)

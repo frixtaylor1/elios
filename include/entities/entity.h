@@ -23,10 +23,10 @@ typedef struct {
  * Entity functions...
  */
 
-Public void add_component(Entity *e, ComponentType component);
-Public void remove_component(Entity *e, ComponentType component);
-Public bool has_component(Entity *e, ComponentType component);
-Public void inspect_entity(Entity* e);
+Public void add_component(Entity *entity, ComponentType component);
+Public void remove_component(Entity *entity, ComponentType component);
+Public bool has_component(Entity *entity, ComponentType component);
+Public void inspect_entity(Entity *entity);
 
 /*
  * EntityManager functions...
