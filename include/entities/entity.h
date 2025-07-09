@@ -4,6 +4,7 @@
 #include "../elios.h"
 
 #define MAX_ENTITIES 1024
+#define MAX_COMPONENTS 64
 
 typedef struct {
   mask components;
@@ -13,7 +14,7 @@ typedef struct {
 } Entity;
 
 typedef struct {
-  enum { Null_Entity = 0, Max_Entities = MAX_ENTITIES } EntityManagerState;
+  enum { Null_Entity = 0, Max_Components = MAX_COMPONENTS, Max_Entities = MAX_ENTITIES } EntityManagerState;
   Entity entities[Max_Entities];
   int32 nbEntities;
   int32 idxCounter;

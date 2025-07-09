@@ -18,7 +18,11 @@ Private cstring ComponentsName[4] = {
 
 Private void print_mask_entity(mask m) {
   printf("component mask: ");
-  for (int32 i = 63; i > 0; i--) {
+  /** an unsingned long long mask can hold 64 components
+   * For a mask with the first 3 components looks like this:
+   * 000000000000000000000000000000000000000000000000000000000000111 
+   */
+  for (int32 i = Max_Components; i > 0; i--) {
     if (m & (1LL << i)) {
       printf("1");
     } else {
@@ -33,7 +37,7 @@ Private bool entity_has_equal_id(Entity *entity, int32 id) {
 }
 
 Private Entity* find_free_entity() {
-  Entity *entity      = &entityManager.entities[0];
+  Entity *entity      = entityManager.entities;
   Entity *lastAddress = &entityManager.entities[Arr_Size(entityManager.entities)];
   WhileTrue (entity->alloced && entity++ < lastAddress);
   IfTrue (entity->alloced) assert(false && "Max cap reached for allocate entities");
