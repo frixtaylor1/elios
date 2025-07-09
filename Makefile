@@ -15,6 +15,9 @@ INCLUDE_DIR = ./include
 OBJ_COMMAND = $(CC) -c $< -o $@ -I$(INCLUDE_DIR)
 OBJS        = $(BIN_DIR)/main.o
 OBJS        += $(BIN_DIR)/entity.o
+OBJS        += $(BIN_DIR)/components.o
+OBJS        += $(BIN_DIR)/alloc.o
+OBJS        += $(BIN_DIR)/heap.o
 
 all: clean $(BIN_DIR) $(BIN) run
 
@@ -28,6 +31,9 @@ $(BIN_DIR)/entity.o: $(SRC_DIR)/entity.c $(BIN_DIR)/alloc.o
 	$(OBJ_COMMAND)
 
 $(BIN_DIR)/alloc.o: $(SRC_DIR)/alloc.c $(BIN_DIR)/heap.o
+	$(OBJ_COMMAND)
+
+$(BIN_DIR)/components.o: $(SRC_DIR)/components.c
 	$(OBJ_COMMAND)
 
 $(BIN_DIR)/heap.o: $(SRC_DIR)/heap.asm

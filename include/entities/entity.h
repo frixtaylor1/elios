@@ -2,9 +2,8 @@
 #define entity_H
 
 #include "../elios.h"
+#include <components/components.h>
 
-#define MAX_ENTITIES 1024
-#define MAX_COMPONENTS 64
 
 typedef struct {
   mask components;
@@ -14,8 +13,7 @@ typedef struct {
 } Entity;
 
 typedef struct {
-  enum { Null_Entity = 0, Max_Components = MAX_COMPONENTS, Max_Entities = MAX_ENTITIES } EntityManagerState;
-  Entity entities[Max_Entities];
+  Entity entities[MAX_ENTITIES];
   int32 nbEntities;
   int32 idxCounter;
 } EntityManager;
@@ -24,16 +22,16 @@ typedef struct {
  * Entity functions...
  */
 
-Public void add_component(Entity *entity, ComponentType component);
+Public void add_component(ComponentType component, Entity *entity, void* content);
+Public void *get_component(ComponentType type, Entity *entity);
 Public void remove_component(Entity *entity, ComponentType component);
-Public bool has_component(Entity *entity, ComponentType component);
-Public void inspect_entity(Entity *entity);
+Public bool has_component(const Entity *entity, ComponentType component);
+Public void inspect_entity(const Entity *entity);
 
 /*
  * EntityManager functions...
  */
 
-Public void  init_entity_manager();
 Public void clean_up_entity_manager();
 Public int32 add_entity();
 Public Entity *get_entity(int32 id);

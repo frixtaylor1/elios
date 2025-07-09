@@ -12,6 +12,8 @@ extern heap *memspace;
 
 #define $header (MemHeader *)
 
+const int8 WordSize = sizeof(word);
+
 Private void init_header(MemHeader *header, word words, bool alloced, bool reserved) {
   header->words = words;
   header->alloced = alloced;
@@ -24,17 +26,17 @@ Private Constructor void init() {
 }
 
 Private word calculate_words_given_bytes(int32 bytes) {
-  return !(bytes % 4) ? bytes / 4 : bytes / 4 + 1;
+  return !(bytes % WordSize) ? bytes / WordSize : bytes / WordSize + 1;
 }
 
 Private MemHeader *get_header_given_ptr(void *ptr) { return $header ptr - 1; }
 
 Private int32 get_bytes_alloc_region_given_header(MemHeader *header) {
-  return header->words * 4;
+  return header->words * WordSize;
 }
 
 Private MemHeader *next_header(MemHeader *header) {
-  return $header($int8(header + 1) + header->words * 4);
+  return $header($int8(header + 1) + header->words * WordSize);
 }
 
 Private MemHeader *find_block(MemHeader *current, word wordsToAlloc) {

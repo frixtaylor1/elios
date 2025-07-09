@@ -2,27 +2,23 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <allocators/alloc.h>
+#include <components/components.h>
 
 /*
  * Definitions of private members...
  */
 
 Private EntityManager entityManager = {0};
-
-Private cstring ComponentsName[4] = {
-  "None",
-  "Health",
-  "Collision",
-  "Render"
-};
+Private Entity *lastAddressEntityManager;
 
 Private void print_mask_entity(mask m) {
   printf("component mask: ");
   /** an unsingned long long mask can hold 64 components
    * For a mask with the first 3 components looks like this:
-   * 000000000000000000000000000000000000000000000000000000000000111 
+   * 000000000000000000000000000000000000000000000000000000000000111
    */
-  for (int32 i = Max_Components; i > 0; i--) {
+  for (int32 i = 0; i < MAX_COMPONENTS_PER_ENTITY; i++) {
     if (m & (1LL << i)) {
       printf("1");
     } else {
@@ -32,39 +28,77 @@ Private void print_mask_entity(mask m) {
   printf("\n");
 }
 
-Private bool entity_has_equal_id(Entity *entity, int32 id) {
+Private bool keep_searching_entity(const Entity *entity) {
+  return entity->alloced && entity < lastAddressEntityManager;
+}
+
+Private bool entity_has_equal_id(const Entity *entity, int32 id) {
   return entity->id == id;
 }
 
 Private Entity* find_free_entity() {
-  Entity *entity      = entityManager.entities;
-  Entity *lastAddress = &entityManager.entities[Arr_Size(entityManager.entities)];
-  WhileTrue (entity->alloced && entity++ < lastAddress);
+  Entity *entity = entityManager.entities;
+  WhileTrue (keep_searching_entity(++entity));
   IfTrue (entity->alloced) assert(false && "Max cap reached for allocate entities");
 
-  return entity;  
+  return entity;
+}
+
+Private void init_entity_manager() {
+  memset($void entityManager.entities, NULL_ENTITY, MAX_ENTITIES * sizeof(Entity));
+  entityManager.nbEntities = 0;
+  entityManager.idxCounter = 0;
+  lastAddressEntityManager = &entityManager.entities[Arr_Size(entityManager.entities)];
 }
 
 /*
  * Definitions of public members...
  */
 
-Public void add_component(Entity *entitiy, ComponentType component) {
-  entitiy->components |= (1LL << component);
+
+void add_component(ComponentType component, Entity *entity, void *content) {
+    IfTrue (has_component(entity, component)) return;
+    entity->components |= (1LL << component);
+
+#define $COMPONENT_DEF(enum_name, struct_type, COMPONENTS_ARR_NAMES) \
+    IfTrue (component == enum_name) { \
+        COMPONENTS_ARR_NAMES[entity->id] = mem_alloc(sizeof(struct_type)); \
+        *((struct_type *)COMPONENTS_ARR_NAMES[entity->id]) = *((struct_type *)content); \
+        return; \
+    }
+    $COMPONENT_LIST
+#undef $COMPONENT_DEF
 }
 
-Public void remove_component(Entity *entitiy, ComponentType component) {
-  entitiy->components &= ~(1LL << component);
+void *get_component(ComponentType component, Entity *entity) {
+#define $COMPONENT_DEF(enum_name, struct_type, COMPONENTS_ARR_NAMES) \
+    IfTrue (component == enum_name) return COMPONENTS_ARR_NAMES[entity->id];
+
+    $COMPONENT_LIST
+#undef $COMPONENT_DEF
+
+    return NULL;
 }
 
-Public bool has_component(Entity *entitiy, ComponentType component) {
-  return entitiy->components & (1LL << component);
+Public void remove_component(Entity *entity, ComponentType component) {
+  entity->components &= ~(1LL << component);
 }
 
-Public void init_entity_manager() {
-  memset($void entityManager.entities, Null_Entity, Max_Entities * sizeof(Entity));
-  entityManager.nbEntities = 0;
-  entityManager.idxCounter = 0;
+Public bool has_component(const Entity *entity, ComponentType component) {
+  return entity->components & (1LL << component);
+}
+
+Public void inspect_entity(const Entity *entity) {
+  printf("........................................................................................................\n");
+  printf("Entity id: %d\n", entity->id);
+  print_mask_entity(entity->components);
+  int16 componentTypeId = 0;
+  ForEach (cstring *, componentName, ComponentsName) {
+    IfTrue (has_component(entity, componentTypeId++)) {
+      printf("\t-> %s\n", ComponentsName[componentTypeId]);
+    }
+  } EForEach;
+  printf("........................................................................................................\n");
 }
 
 Public void clean_up_entity_manager() {
@@ -85,7 +119,7 @@ Public Entity *get_entity(int32 id) {
       return entity;
     }
   } EForEach;
-  return Null_Entity;
+  return NULL_ENTITY;
 }
 
 Public void remove_entity(int32 id) {
@@ -95,15 +129,6 @@ Public void remove_entity(int32 id) {
   entity->reserved   = false;
 }
 
-Public void inspect_entity(Entity *entitiy) {
-  printf("........................................................................................................\n");
-  printf("Entity id: %d\n", entitiy->id);
-  print_mask_entity(entitiy->components);
-  int16 componentTypeId = 0;
-  ForEach (cstring *, componentName, ComponentsName) {
-    IfTrue (has_component(entitiy, ++componentTypeId)) {
-      printf("\t-> %s\n", ComponentsName[componentTypeId]);
-    }
-  } EForEach;
-  printf("........................................................................................................\n");
-}
+Private Constructor void init_module() {
+  init_entity_manager();
+} 

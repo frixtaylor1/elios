@@ -33,12 +33,8 @@ typedef int64              mask;
 #define $int (int *)
 #define $void (void *)
 
-typedef enum {
-    CMP_HEALTH    = 1,
-    CMP_COLLISION = 2,
-    CMP_RENDER    = 3,
-} ComponentType;
-
-int main();
+#define MAX_ENTITIES 1024
+#define MAX_COMPONENTS_PER_ENTITY 64
+#define NULL_ENTITY 0
 
 #endif // elios_HPP
