@@ -60,10 +60,10 @@ void add_component(ComponentType component, Entity *entity, void *content) {
     IfTrue (has_component(entity, component)) return;
     entity->components |= (1LL << component);
 
-#define $COMPONENT_DEF(enum_name, struct_type, COMPONENTS_ARR_NAMES) \
+#define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
     IfTrue (component == enum_name) { \
-        COMPONENTS_ARR_NAMES[entity->id] = mem_alloc(sizeof(struct_type)); \
-        *((struct_type *)COMPONENTS_ARR_NAMES[entity->id]) = *((struct_type *)content); \
+        component_list_name[entity->id] = mem_alloc(sizeof(struct_type)); \
+        *((struct_type *)component_list_name[entity->id]) = *((struct_type *)content); \
         return; \
     }
     $COMPONENT_LIST
@@ -71,8 +71,8 @@ void add_component(ComponentType component, Entity *entity, void *content) {
 }
 
 void *get_component(ComponentType component, Entity *entity) {
-#define $COMPONENT_DEF(enum_name, struct_type, COMPONENTS_ARR_NAMES) \
-    IfTrue (component == enum_name) return COMPONENTS_ARR_NAMES[entity->id];
+#define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
+    IfTrue (component == enum_name) return component_list_name[entity->id];
 
     $COMPONENT_LIST
 #undef $COMPONENT_DEF

@@ -28,25 +28,17 @@ typedef struct {
     $COMPONENT_DEF(CMP_RENDER,    RenderComponent,    RenderComponents)
 
 typedef enum {
-#define $COMPONENT_DEF(enum_name, struct_type, COMPONENTS_ARR_NAMES) enum_name,
+#define $COMPONENT_DEF(enum_name, struct_type, component_list_name) enum_name,
     $COMPONENT_LIST
 #undef $COMPONENT_DEF
     CMP_COUNT
 } ComponentType;
 
-#define $COMPONENT_DEF(enum_name, struct_type, COMPONENTS_ARR_NAMES) \
-    void *COMPONENTS_ARR_NAMES[MAX_ENTITIES] = {0};
+extern cstring ComponentsName[CMP_COUNT];
+
+#define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
+    extern void *component_list_name[MAX_ENTITIES];
+    $COMPONENT_LIST
 #undef $COMPONENT_DEF
-
-extern cstring ComponentsName[CMP_COUNT + 1];
-
-#define $COMPONENT_DEF(enum_name, struct_type, COMPONENTS_ARR_NAMES) \
-    typedef struct struct_type struct_type;   \
-    extern void *COMPONENTS_ARR_NAMES[MAX_ENTITIES];
-#undef $COMPONENT_DEF
-
-extern void *HealthComponents[MAX_ENTITIES];
-extern void *CollisionComponents[MAX_ENTITIES];
-extern void *RenderComponents[MAX_ENTITIES];
 
 #endif // components_H

@@ -1,11 +1,13 @@
+// components.c
 #include <components/components.h>
 
-cstring ComponentsName[CMP_COUNT + 1] = {
-  [1] = "Health",
-  [2] = "Collision",
-  [3] = "Render"
-};
+#define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
+    void *component_list_name[MAX_ENTITIES] = {0};
+$COMPONENT_LIST
+#undef $COMPONENT_DEF
 
-#define $COMPONENT_DEF(enum_name, struct_type, COMPONENTS_ARR_NAMES) void *COMPONENTS_ARR_NAMES[MAX_ENTITIES] = {0};
-  $COMPONENT_LIST
-#undef X
+cstring ComponentsName[CMP_COUNT] = {
+    [CMP_HEALTH]    = "Health",
+    [CMP_COLLISION] = "Collision",
+    [CMP_RENDER]    = "Render"
+};
