@@ -4,15 +4,16 @@
 #include <assert.h>
 #include <allocators/alloc.h>
 #include <components/components.h>
+#include <synch/synch.h>
 
 /*
  * Definitions of private members...
  */
 
-Private EntityManager entityManager = {0};
-Private Entity *lastAddressEntityManager;
+Elios_Private EntityManager entityManager = {0};
+Elios_Private Entity *lastAddressEntityManager;
 
-Private void print_mask_entity(mask m) {
+Elios_Private void print_mask_entity(mask m) {
   printf("component mask: ");
   /** an unsingned long long mask can hold 64 components
    * For a mask with the first 3 components looks like this:
@@ -28,15 +29,15 @@ Private void print_mask_entity(mask m) {
   printf("\n");
 }
 
-Private bool keep_searching_entity(const Entity *entity) {
+Elios_Private bool keep_searching_entity(const Entity *entity) {
   return entity->alloced && entity < lastAddressEntityManager;
 }
 
-Private bool entity_has_equal_id(const Entity *entity, int32 id) {
+Elios_Private bool entity_has_equal_id(const Entity *entity, int32 id) {
   return entity->id == id;
 }
 
-Private Entity* find_free_entity() {
+Elios_Private Entity* find_free_entity() {
   Entity *entity = entityManager.entities;
   WhileTrue (keep_searching_entity(++entity));
   IfTrue (entity->alloced) assert(false && "Max cap reached for allocate entities");
@@ -44,7 +45,7 @@ Private Entity* find_free_entity() {
   return entity;
 }
 
-Private void init_entity_manager() {
+Elios_Private void init_entity_manager() {
   memset($void entityManager.entities, NULL_ENTITY, MAX_ENTITIES * sizeof(Entity));
   entityManager.nbEntities = 0;
   entityManager.idxCounter = 0;
@@ -56,31 +57,38 @@ Private void init_entity_manager() {
  */
 
 
-void add_component(Entity *entity, ComponentType component, void *content) {
+Elios_Public void add_component(Entity *entity, ComponentType component, void *content) {
     IfTrue (has_component(entity, component)) return;
     entity->components |= (1LL << component);
 
 #define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
     IfTrue (component == enum_name) { \
+        mutex_lock($void &component_list_name##_mutex); \
         component_list_name[entity->id] = mem_alloc(sizeof(struct_type)); \
         *((struct_type *)component_list_name[entity->id]) = *((struct_type *)content); \
+        mutex_unlock($void &component_list_name##_mutex); \
         return; \
-    }
+    } \
     $COMPONENT_LIST
 #undef $COMPONENT_DEF
+    (void) content;
 }
 
-void *get_component(const Entity *entity, ComponentType component) {
+Elios_Public void *get_component(const Entity *entity, ComponentType component) {
 #define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
-    IfTrue (component == enum_name) return component_list_name[entity->id];
-
+    IfTrue (component == enum_name) { \
+      mutex_lock($void &component_list_name##_mutex); \
+      void *ptr =  component_list_name[entity->id]; \
+      mutex_unlock($void &component_list_name##_mutex); \
+      return ptr; \
+    } \
     $COMPONENT_LIST
 #undef $COMPONENT_DEF
-
+    (void) entity; (void) component;
     return NULL;
 }
 
-Public void remove_component(Entity *entity, ComponentType component) {
+Elios_Public void remove_component(Entity *entity, ComponentType component) {
   IfTrue (has_component(entity, component)) {
     entity->components &= ~(1LL << component);
     void* ptr = get_component(entity, component);
@@ -88,23 +96,25 @@ Public void remove_component(Entity *entity, ComponentType component) {
   }
 }
 
-Public bool has_component(const Entity *entity, ComponentType component) {
+Elios_Public bool has_component(const Entity *entity, ComponentType component) {
   return entity->components & (1LL << component);
 }
 
-Public void inspect_entity(const Entity *entity) {
+Elios_Public void inspect_entity(const Entity *entity) {
   printf("........................................................................................................\n");
   printf("Entity id: %d\n", entity->id);
   print_mask_entity(entity->components);
   int16 componentTypeId = 0;
   ForEach (cstring *, componentName, ComponentsName) {
-    IfTrue (has_component(entity, componentTypeId))  printf("\t-> %s\n", ComponentsName[componentTypeId]);
+    IfTrue (has_component(entity, componentTypeId)) {
+      printf("\t-> %s\n", ComponentsName[componentTypeId]);
+    }
     componentTypeId++;
   } EForEach;
   printf("........................................................................................................\n");
 }
 
-Public void for_each_component_of_entity(const Entity *entity, void (*callback)(void *)) {
+Elios_Public void for_each_component_of_entity(const Entity *entity, void (*callback)(void *)) {
   int16 componentTypeId = 0;
   ForEach (cstring *, componentName, ComponentsName) {
     IfTrue (has_component(entity, componentTypeId)) {
@@ -114,19 +124,22 @@ Public void for_each_component_of_entity(const Entity *entity, void (*callback)(
   } EForEach;
 }
 
-Public void clean_up_entity_manager() {
+Elios_Public void clean_up_entity_manager() {
+  mutex_destroy(entity_mutex);
   init_entity_manager();
 }
 
-Public int32 add_entity() {
+Elios_Public int32 add_entity() {
+  mutex_lock(entity_mutex);
   Entity *entity = find_free_entity();
   entity->alloced = true;
   entity->id      = entityManager.idxCounter++;
   entityManager.nbEntities++;
+  mutex_unlock(entity_mutex);
   return entity->id;
 }
 
-Public Entity *get_entity(const int32 id) {
+Elios_Public Entity *get_entity(const int32 id) {
   ForEach(Entity *, entity, entityManager.entities) {
     IfTrue (entity_has_equal_id(entity, id)) {
       return entity;
@@ -135,7 +148,7 @@ Public Entity *get_entity(const int32 id) {
   return NULL_ENTITY;
 }
 
-Public void remove_entity(int32 id) {
+Elios_Public void remove_entity(int32 id) {
   Entity* entity     = get_entity(id);
   entity->alloced    = false;
 
@@ -145,6 +158,7 @@ Public void remove_entity(int32 id) {
   entity->reserved   = false;
 }
 
-Private Constructor void init_module() {
+Elios_Private Elios_Constructor void init_module() {
+  mutex_init(entity_mutex);
   init_entity_manager();
 } 

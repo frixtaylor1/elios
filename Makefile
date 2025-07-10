@@ -2,7 +2,7 @@ CXX         = gcc
 CXX_DEV_OP  = -O0
 CXX_PROD_OP = -O3
 OP_FLAG     = $(CXX_DEV_OP)
-CXX_FLAGS   = -Wextra -Wall -Wpedantic $(OP_FLAG) -g
+CXX_FLAGS   = -Wextra -Wall -Wpedantic $(OP_FLAG) -g -MMD -MP
 CC          = $(CXX) $(CXX_FLAGS)
 
 BIN_DIR     = ./build
@@ -18,6 +18,7 @@ OBJS        += $(BIN_DIR)/entity.o
 OBJS        += $(BIN_DIR)/components.o
 OBJS        += $(BIN_DIR)/alloc.o
 OBJS        += $(BIN_DIR)/heap.o
+OBJS        += $(BIN_DIR)/synch.o
 
 all: clean $(BIN_DIR) $(BIN) run
 
@@ -38,6 +39,9 @@ $(BIN_DIR)/components.o: $(SRC_DIR)/components.c
 
 $(BIN_DIR)/heap.o: $(SRC_DIR)/heap.asm
 	nasm -f elf64 $^ -o $@
+
+$(BIN_DIR)/synch.o: $(SRC_DIR)/synch.c
+	$(OBJ_COMMAND)
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)

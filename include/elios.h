@@ -3,10 +3,10 @@
 
 #include <stdbool.h>
 
-#define Packed __attribute__((packed))
-#define Public __attribute__((visibility("default")))
-#define Private static
-#define Constructor __attribute__((constructor))
+#define Elios_Packed  __attribute__((packed))
+#define Elios_Public __attribute__((visibility("default")))
+#define Elios_Private static
+#define Elios_Constructor __attribute__((constructor))
 
 #define Arr_Size(x) sizeof(x)/sizeof(x[0])
 #define Arr_SafeIterate(item, items) (item < &items[Arr_Size(items)])

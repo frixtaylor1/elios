@@ -2,6 +2,7 @@
 #ifndef components_H
 #define components_H
 #include <elios.h>
+#include <synch/synch.h>
 
 #ifndef Vector2
 typedef struct {
@@ -37,7 +38,9 @@ typedef enum {
 extern cstring ComponentsName[CMP_COUNT];
 
 #define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
-    extern void *component_list_name[MAX_ENTITIES];
+    extern void *component_list_name[MAX_ENTITIES]; \
+    Mutex component_list_name##_mutex; \
+    extern CriticalSection component_list_name##_mutex; \
     $COMPONENT_LIST
 #undef $COMPONENT_DEF
 

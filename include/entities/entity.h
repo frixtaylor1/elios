@@ -22,20 +22,20 @@ typedef struct {
  * Entity functions...
  */
 
-Public void for_each_component_of_entity(const Entity *entity, void (*callback)(void *));
-Public void add_component(Entity *entity, ComponentType component, void* content);
-Public void *get_component(const Entity *entity, ComponentType type);
-Public void remove_component(Entity *entity, ComponentType component);
-Public bool has_component(const Entity *entity, ComponentType component);
-Public void inspect_entity(const Entity *entity);
+Elios_Public void for_each_component_of_entity(const Entity *entity, void (*callback)(void *));
+Elios_Public void add_component(Entity *entity, ComponentType component, void* content);
+Elios_Public void *get_component(const Entity *entity, ComponentType type);
+Elios_Public void remove_component(Entity *entity, ComponentType component);
+Elios_Public bool has_component(const Entity *entity, ComponentType component);
+Elios_Public void inspect_entity(const Entity *entity);
 
 /*
  * EntityManager functions...
  */
 
-Public void clean_up_entity_manager();
-Public int32 add_entity();
-Public Entity *get_entity(const int32 id);
-Public void remove_entity(int32 id);
+Elios_Public void clean_up_entity_manager();
+Elios_Public int32 add_entity();
+Elios_Public Entity *get_entity(const int32 id);
+Elios_Public void remove_entity(int32 id);
 
 #endif // entity_H
