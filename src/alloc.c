@@ -82,19 +82,19 @@ Public void *mem_alloc(int32 bytes) {
   }
 
   MemHeader *selectedHeader = find_block(header, wordsToAlloc);
-  IfTrue (selectedHeader->words) {
+  IfTrue ((bool) selectedHeader) {
     word difference = selectedHeader->words - wordsToAlloc;
+
     selectedHeader->words = wordsToAlloc;
-
-    MemHeader *next = next_header(selectedHeader);
-    init_header(next, difference, false, false);
-  }
-
-  if (selectedHeader) {
     selectedHeader->alloced = true;
-    return $void(selectedHeader + 1);
-  }
 
+    IfTrue (difference > 0) {
+      MemHeader *next = next_header(selectedHeader);
+      init_header(next, difference, false, false);
+    }
+
+    return (void *)(selectedHeader + 1);
+  }
   assert(false && "Error no mem!");
 }
 

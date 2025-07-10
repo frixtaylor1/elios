@@ -56,7 +56,7 @@ Private void init_entity_manager() {
  */
 
 
-void add_component(ComponentType component, Entity *entity, void *content) {
+void add_component(Entity *entity, ComponentType component, void *content) {
     IfTrue (has_component(entity, component)) return;
     entity->components |= (1LL << component);
 
@@ -70,7 +70,7 @@ void add_component(ComponentType component, Entity *entity, void *content) {
 #undef $COMPONENT_DEF
 }
 
-void *get_component(ComponentType component, Entity *entity) {
+void *get_component(const Entity *entity, ComponentType component) {
 #define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
     IfTrue (component == enum_name) return component_list_name[entity->id];
 
@@ -81,7 +81,11 @@ void *get_component(ComponentType component, Entity *entity) {
 }
 
 Public void remove_component(Entity *entity, ComponentType component) {
-  entity->components &= ~(1LL << component);
+  IfTrue (has_component(entity, component)) {
+    entity->components &= ~(1LL << component);
+    void* ptr = get_component(entity, component);
+    mem_dealloc(ptr);
+  }
 }
 
 Public bool has_component(const Entity *entity, ComponentType component) {
@@ -94,11 +98,20 @@ Public void inspect_entity(const Entity *entity) {
   print_mask_entity(entity->components);
   int16 componentTypeId = 0;
   ForEach (cstring *, componentName, ComponentsName) {
-    IfTrue (has_component(entity, componentTypeId++)) {
-      printf("\t-> %s\n", ComponentsName[componentTypeId]);
-    }
+    IfTrue (has_component(entity, componentTypeId))  printf("\t-> %s\n", ComponentsName[componentTypeId]);
+    componentTypeId++;
   } EForEach;
   printf("........................................................................................................\n");
+}
+
+Public void for_each_component_of_entity(const Entity *entity, void (*callback)(void *)) {
+  int16 componentTypeId = 0;
+  ForEach (cstring *, componentName, ComponentsName) {
+    IfTrue (has_component(entity, componentTypeId)) {
+      void *ptr = get_component(entity, componentTypeId++);
+      callback(ptr);
+    }
+  } EForEach;
 }
 
 Public void clean_up_entity_manager() {
@@ -113,7 +126,7 @@ Public int32 add_entity() {
   return entity->id;
 }
 
-Public Entity *get_entity(int32 id) {
+Public Entity *get_entity(const int32 id) {
   ForEach(Entity *, entity, entityManager.entities) {
     IfTrue (entity_has_equal_id(entity, id)) {
       return entity;
@@ -125,6 +138,9 @@ Public Entity *get_entity(int32 id) {
 Public void remove_entity(int32 id) {
   Entity* entity     = get_entity(id);
   entity->alloced    = false;
+
+  for_each_component_of_entity(entity, &mem_dealloc);
+
   entity->components = 0;
   entity->reserved   = false;
 }

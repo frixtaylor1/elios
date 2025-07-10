@@ -22,8 +22,9 @@ typedef struct {
  * Entity functions...
  */
 
-Public void add_component(ComponentType component, Entity *entity, void* content);
-Public void *get_component(ComponentType type, Entity *entity);
+Public void for_each_component_of_entity(const Entity *entity, void (*callback)(void *));
+Public void add_component(Entity *entity, ComponentType component, void* content);
+Public void *get_component(const Entity *entity, ComponentType type);
 Public void remove_component(Entity *entity, ComponentType component);
 Public bool has_component(const Entity *entity, ComponentType component);
 Public void inspect_entity(const Entity *entity);
@@ -34,7 +35,7 @@ Public void inspect_entity(const Entity *entity);
 
 Public void clean_up_entity_manager();
 Public int32 add_entity();
-Public Entity *get_entity(int32 id);
+Public Entity *get_entity(const int32 id);
 Public void remove_entity(int32 id);
 
 #endif // entity_H
