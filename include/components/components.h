@@ -23,25 +23,31 @@ typedef struct {
     Vector2 pos;
 } RenderComponent;
 
-#define $COMPONENT_LIST \
-    $COMPONENT_DEF(CMP_HEALTH,    HealthComponent,    HealthComponents) \
-    $COMPONENT_DEF(CMP_COLLISION, CollisionComponent, CollisionComponents) \
-    $COMPONENT_DEF(CMP_RENDER,    RenderComponent,    RenderComponents)
+typedef void (*ActionComponent)(void *component);
 
 typedef enum {
-#define $COMPONENT_DEF(enum_name, struct_type, component_list_name) enum_name,
-    $COMPONENT_LIST
-#undef $COMPONENT_DEF
+    CMP_HEALTH = 0,
+    CMP_COLLISION,
+    CMP_RENDER,
     CMP_COUNT
 } ComponentType;
 
+extern void *render_cmp_mutex;
+extern void *collision_cmp_mutex;
+extern void *health_cmp_mutex;
+
+extern void *HealthComponents[MAX_ENTITIES];
+extern void *CollisionComponents[MAX_ENTITIES];
+extern void *RenderComponents[MAX_ENTITIES];
+
 extern cstring ComponentsName[CMP_COUNT];
 
-#define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
-    extern void *component_list_name[MAX_ENTITIES]; \
-    Mutex component_list_name##_mutex; \
-    extern CriticalSection component_list_name##_mutex; \
-    $COMPONENT_LIST
-#undef $COMPONENT_DEF
+Elios_Public void *get_health_component(int32 entityId);
+Elios_Public void *get_collision_component(int32 entityId);
+Elios_Public void *get_render_component(int32 entityId);
+
+Elios_Public void add_health_component(int32 entityId, void* content, int32 size);
+Elios_Public void add_collision_component(int32 entityId, void* content, int32 size);
+Elios_Public void add_render_component(int32 entityId, void* content, int32 size);
 
 #endif // components_H

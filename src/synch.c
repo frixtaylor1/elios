@@ -18,21 +18,24 @@
     #define MUTEX_DESTROY(m) pthread_mutex_destroy((m))
 #endif
 
-static NativeMutex entity_mutex_internal;
-void *entity_mutex = &entity_mutex_internal;
+Elios_Private NativeMutex internal_mutex[MAX_COMPONENTS_PER_ENTITY + 1];
 
-Elios_Public void mutex_init(void *m) {
-    MUTEX_INIT((NativeMutex *)m);
+Elios_Public void *get_mutex(int32 mutexId) {
+    return $void &internal_mutex[mutexId];
 }
 
-Elios_Public void mutex_lock(void *m) {
-    MUTEX_LOCK((NativeMutex *)m);
+Elios_Public void mutex_init(int32 mutexId) {
+    MUTEX_INIT((NativeMutex *)get_mutex(mutexId + 1));
 }
 
-Elios_Public void mutex_unlock(void *m) {
-    MUTEX_UNLOCK((NativeMutex *)m);
+Elios_Public void mutex_lock(int32 mutexId) {
+    MUTEX_LOCK((NativeMutex *)get_mutex(mutexId + 1));
 }
 
-Elios_Public void mutex_destroy(void *m) {
-    MUTEX_DESTROY((NativeMutex *)m);
+Elios_Public void mutex_unlock(int32 mutexId) {
+    MUTEX_UNLOCK((NativeMutex *)get_mutex(mutexId + 1));
+}
+
+Elios_Public void mutex_destroy(int32 mutexId) {
+    MUTEX_DESTROY((NativeMutex *)get_mutex(mutexId + 1));
 }

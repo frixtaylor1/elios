@@ -40,7 +40,7 @@ Elios_Private bool entity_has_equal_id(const Entity *entity, int32 id) {
 Elios_Private Entity* find_free_entity() {
   Entity *entity = entityManager.entities;
   WhileTrue (keep_searching_entity(++entity));
-  IfTrue (entity->alloced) assert(false && "Max cap reached for allocate entities");
+  IfTrue (entity->alloced) ThrowErr(33, "Max cap reached for allocate entities");
 
   return entity;
 }
@@ -58,34 +58,27 @@ Elios_Private void init_entity_manager() {
 
 
 Elios_Public void add_component(Entity *entity, ComponentType component, void *content) {
-    IfTrue (has_component(entity, component)) return;
-    entity->components |= (1LL << component);
+  IfTrue (has_component(entity, component)) return;
+  entity->components |= (1LL << component);
 
-#define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
-    IfTrue (component == enum_name) { \
-        mutex_lock($void &component_list_name##_mutex); \
-        component_list_name[entity->id] = mem_alloc(sizeof(struct_type)); \
-        *((struct_type *)component_list_name[entity->id]) = *((struct_type *)content); \
-        mutex_unlock($void &component_list_name##_mutex); \
-        return; \
-    } \
-    $COMPONENT_LIST
-#undef $COMPONENT_DEF
-    (void) content;
+  switch (component) {
+    case CMP_HEALTH:    add_health_component(entity->id, content, sizeof(HealthComponent));       break;
+    case CMP_RENDER:    add_render_component(entity->id, content, sizeof(RenderComponent));       break;
+    case CMP_COLLISION: add_collision_component(entity->id, content, sizeof(CollisionComponent)); break;
+    case CMP_COUNT:     break;
+  }
 }
 
 Elios_Public void *get_component(const Entity *entity, ComponentType component) {
-#define $COMPONENT_DEF(enum_name, struct_type, component_list_name) \
-    IfTrue (component == enum_name) { \
-      mutex_lock($void &component_list_name##_mutex); \
-      void *ptr =  component_list_name[entity->id]; \
-      mutex_unlock($void &component_list_name##_mutex); \
-      return ptr; \
-    } \
-    $COMPONENT_LIST
-#undef $COMPONENT_DEF
-    (void) entity; (void) component;
-    return NULL;
+  IfTrue (has_component(entity, component)) {
+    switch (component) {
+      case CMP_HEALTH:    return get_health_component(entity->id);    break;
+      case CMP_RENDER:    return get_render_component(entity->id);    break;
+      case CMP_COLLISION: return get_collision_component(entity->id); break;
+      case CMP_COUNT:     break;
+    }
+  }
+  return NULL;
 }
 
 Elios_Public void remove_component(Entity *entity, ComponentType component) {
@@ -125,17 +118,17 @@ Elios_Public void for_each_component_of_entity(const Entity *entity, void (*call
 }
 
 Elios_Public void clean_up_entity_manager() {
-  mutex_destroy(entity_mutex);
+  mutex_destroy(ENTITY_MUTEX_ID);
   init_entity_manager();
 }
 
 Elios_Public int32 add_entity() {
-  mutex_lock(entity_mutex);
+  mutex_lock(ENTITY_MUTEX_ID);
   Entity *entity = find_free_entity();
   entity->alloced = true;
   entity->id      = entityManager.idxCounter++;
   entityManager.nbEntities++;
-  mutex_unlock(entity_mutex);
+  mutex_unlock(ENTITY_MUTEX_ID);
   return entity->id;
 }
 
@@ -159,6 +152,6 @@ Elios_Public void remove_entity(int32 id) {
 }
 
 Elios_Private Elios_Constructor void init_module() {
-  mutex_init(entity_mutex);
+  mutex_init(ENTITY_MUTEX_ID);
   init_entity_manager();
 } 

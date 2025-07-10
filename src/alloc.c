@@ -21,7 +21,7 @@ Elios_Private void init_header(MemHeader *header, word words, bool alloced, bool
 }
 Elios_Private int8 *lastAddress;
 
-Elios_Private Elios_Constructor void init() {
+Elios_Private Elios_Constructor void init_module() {
  lastAddress = ($int8 memspace + (1024 * 1024 * 1024));
 }
 

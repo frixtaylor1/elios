@@ -20,7 +20,7 @@ OBJS        += $(BIN_DIR)/alloc.o
 OBJS        += $(BIN_DIR)/heap.o
 OBJS        += $(BIN_DIR)/synch.o
 
-all: clean $(BIN_DIR) $(BIN) run
+all: $(BIN_DIR) $(BIN) run
 
 $(BIN): $(OBJS)
 	$(CC) -o $@ $^

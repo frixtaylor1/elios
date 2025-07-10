@@ -4,7 +4,6 @@
 #include "../elios.h"
 #include <components/components.h>
 
-
 typedef struct {
   mask components;
   int32 id: 30;
