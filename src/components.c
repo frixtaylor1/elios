@@ -1,4 +1,3 @@
-// components.c
 #include <components/components.h>
 #include <synch/synch.h>
 #include <allocators/alloc.h>

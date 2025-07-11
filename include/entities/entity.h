@@ -17,11 +17,13 @@ typedef struct {
   int32 idxCounter;
 } EntityManager;
 
+typedef void (*ActionComponent)(void *component);
+
 /*
  * Entity functions...
  */
 
-Elios_Public void for_each_component_of_entity(const Entity *entity, void (*callback)(void *));
+Elios_Public void for_each_component_of_entity(const Entity *entity, ActionComponent callback);
 Elios_Public void add_component(Entity *entity, ComponentType component, void* content);
 Elios_Public void *get_component(const Entity *entity, ComponentType type);
 Elios_Public void remove_component(Entity *entity, ComponentType component);

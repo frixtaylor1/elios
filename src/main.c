@@ -1,33 +1,53 @@
+#include <threads/threads.h>
 #include <entities/entity.h>
 #include <components/components.h>
 #include <stdio.h>
 
+void health_system(int threadId, int start, int end) {
+    for (int id = start; id < end; id++) {
+        Entity *e = get_entity(id);
+        IfTrue (has_component(e, CMP_HEALTH)) {
+            HealthComponent *hc = get_component(e, CMP_HEALTH);
+            hc->health -= 1.1f;
+        }
+    }
+    (void) threadId;
+}
+
+void collision_system(int threadId, int start, int end) {
+    for (int i = start; i < end; i++) {
+        Entity *e = get_entity(i);
+        IfTrue (has_component(e, CMP_COLLISION)) {
+            CollisionComponent *cc = get_component(e, CMP_COLLISION);
+            cc->isColliding = false;
+            IfTrue (cc->posOfCollision.x > 100) {
+                cc->isColliding = true;
+            }
+        }
+    }
+    (void) threadId;
+}
+
 int main() {
-	int32 id  = add_entity();
-	int32 id1 = add_entity();
-	int32 id2 = add_entity();
+    for (int i = 0; i < MAX_ENTITIES; i++) {
+        int id = add_entity();
+        Entity *e = get_entity(id);
+        add_component(e, CMP_HEALTH, $void &(HealthComponent){.health = 100.f});
+        add_component(e, CMP_COLLISION, $void &(CollisionComponent){
+            .isColliding = false,
+            .posOfCollision = {.x=121.f, .y=122.f}});
+    }
 
-	Entity *e  = get_entity(id);
-	Entity *e1 = get_entity(id1);
-	Entity *e2 = get_entity(id2);
+    thread_pool_init();
 
-	add_component(e1, CMP_HEALTH, $void &(HealthComponent) {.health = 100.f});
-	add_component(e1, CMP_COLLISION, $void &(CollisionComponent) {.isColliding = true, .posOfCollision = (Vector2){.x = 121.f, .y = 122.f}});
-	add_component(e1, CMP_RENDER, $void &(RenderComponent) {.pos = (Vector2){.x=10.f, .y=10.f}});
+    WhileTrue (true) {
+        dispatch_system(&health_system);
+        sync_threads();
 
-	HealthComponent *hc = get_component(e1, CMP_HEALTH);
-	RenderComponent *rc = get_component(e1, CMP_RENDER);
-	CollisionComponent *cc = get_component(e1, CMP_COLLISION);
+        dispatch_system(&collision_system);
+        sync_threads();
+    }
 
-	printf("CollisionComponent values: %f, %f\n", cc->posOfCollision.x, cc->posOfCollision.y);
-	printf("HealthComponent values: %f \n", hc->health);
-	printf("RenderComponent values: %f, %f\n", rc->pos.x, rc->pos.y);
-
-	//remove_entity(e1->id);
-
-	inspect_entity(e);
-	inspect_entity(e1);
-	inspect_entity(e2);
-
-	return 0;
+    thread_pool_shutdown();
+    return 0;
 }

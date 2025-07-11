@@ -23,7 +23,6 @@ typedef struct {
     Vector2 pos;
 } RenderComponent;
 
-typedef void (*ActionComponent)(void *component);
 
 typedef enum {
     CMP_HEALTH = 0,
@@ -32,15 +31,7 @@ typedef enum {
     CMP_COUNT
 } ComponentType;
 
-extern void *render_cmp_mutex;
-extern void *collision_cmp_mutex;
-extern void *health_cmp_mutex;
-
-extern void *HealthComponents[MAX_ENTITIES];
-extern void *CollisionComponents[MAX_ENTITIES];
-extern void *RenderComponents[MAX_ENTITIES];
-
-extern cstring ComponentsName[CMP_COUNT];
+Elios_Public extern cstring ComponentsName[CMP_COUNT];
 
 Elios_Public void *get_health_component(int32 entityId);
 Elios_Public void *get_collision_component(int32 entityId);

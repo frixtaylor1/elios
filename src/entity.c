@@ -38,10 +38,11 @@ Elios_Private bool entity_has_equal_id(const Entity *entity, int32 id) {
 }
 
 Elios_Private Entity* find_free_entity() {
+  int id = 0;
   Entity *entity = entityManager.entities;
-  WhileTrue (keep_searching_entity(++entity));
+  WhileTrue (keep_searching_entity(++entity)) ++id;
   IfTrue (entity->alloced) ThrowErr(33, "Max cap reached for allocate entities");
-
+  entity->id = id;
   return entity;
 }
 
@@ -107,7 +108,7 @@ Elios_Public void inspect_entity(const Entity *entity) {
   printf("........................................................................................................\n");
 }
 
-Elios_Public void for_each_component_of_entity(const Entity *entity, void (*callback)(void *)) {
+Elios_Public void for_each_component_of_entity(const Entity *entity, ActionComponent callback) {
   int16 componentTypeId = 0;
   ForEach (cstring *, componentName, ComponentsName) {
     IfTrue (has_component(entity, componentTypeId)) {
@@ -126,7 +127,6 @@ Elios_Public int32 add_entity() {
   mutex_lock(ENTITY_MUTEX_ID);
   Entity *entity = find_free_entity();
   entity->alloced = true;
-  entity->id      = entityManager.idxCounter++;
   entityManager.nbEntities++;
   mutex_unlock(ENTITY_MUTEX_ID);
   return entity->id;
@@ -142,6 +142,8 @@ Elios_Public Entity *get_entity(const int32 id) {
 }
 
 Elios_Public void remove_entity(int32 id) {
+  entityManager.nbEntities--;
+
   Entity* entity     = get_entity(id);
   entity->alloced    = false;
 

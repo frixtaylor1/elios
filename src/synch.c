@@ -1,4 +1,5 @@
 #include <synch/synch.h>
+#include <assert.h>
 
 #ifdef _WIN32
     #include <windows.h>
@@ -18,7 +19,13 @@
     #define MUTEX_DESTROY(m) pthread_mutex_destroy((m))
 #endif
 
-Elios_Private NativeMutex internal_mutex[MAX_COMPONENTS_PER_ENTITY + 1];
+/**
+ *internal_mutex[0] is reserved for entity array access
+ *internal_mutex[1..MAX_CAP_OF_MUTEX] used for components #define 
+ */
+#define MAX_CAP_OF_MUTEX MAX_COMPONENTS_PER_ENTITY + 1
+
+Elios_Private NativeMutex internal_mutex[MAX_CAP_OF_MUTEX];
 
 Elios_Public void *get_mutex(int32 mutexId) {
     return $void &internal_mutex[mutexId];
@@ -29,6 +36,7 @@ Elios_Public void mutex_init(int32 mutexId) {
 }
 
 Elios_Public void mutex_lock(int32 mutexId) {
+    assert(mutexId + 1 < MAX_CAP_OF_MUTEX);
     MUTEX_LOCK((NativeMutex *)get_mutex(mutexId + 1));
 }
 

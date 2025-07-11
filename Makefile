@@ -19,6 +19,7 @@ OBJS        += $(BIN_DIR)/components.o
 OBJS        += $(BIN_DIR)/alloc.o
 OBJS        += $(BIN_DIR)/heap.o
 OBJS        += $(BIN_DIR)/synch.o
+OBJS        += $(BIN_DIR)/threads.o
 
 all: $(BIN_DIR) $(BIN) run
 
@@ -41,6 +42,9 @@ $(BIN_DIR)/heap.o: $(SRC_DIR)/heap.asm
 	nasm -f elf64 $^ -o $@
 
 $(BIN_DIR)/synch.o: $(SRC_DIR)/synch.c
+	$(OBJ_COMMAND)
+
+$(BIN_DIR)/threads.o: $(SRC_DIR)/threads.c
 	$(OBJ_COMMAND)
 
 $(BIN_DIR):
