@@ -34,9 +34,9 @@ Elios_Public void inspect_entity(const Entity *entity);
  * EntityManager functions...
  */
 
-Elios_Public void clean_up_entity_manager();
-Elios_Public int32 add_entity();
+Elios_Public void    clean_up_entity_manager();
+Elios_Public int32   add_entity();
 Elios_Public Entity *get_entity(const int32 id);
-Elios_Public void remove_entity(int32 id);
+Elios_Public void    remove_entity(int32 id);
 
 #endif // entity_H

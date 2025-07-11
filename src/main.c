@@ -29,7 +29,7 @@ void collision_system(int threadId, int start, int end) {
 }
 
 int main() {
-    for (int i = 0; i < MAX_ENTITIES; i++) {
+    for (int i = 0; i < MAX_ENTITIES - 1; i++) {
         int id = add_entity();
         Entity *e = get_entity(id);
         add_component(e, CMP_HEALTH, $void &(HealthComponent){.health = 100.f});
