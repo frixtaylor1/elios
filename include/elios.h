@@ -24,6 +24,8 @@
 #define IfFalse(x) if ((x) == false)
 #define ForEach(T, ITEM, ITEMS) { T ITEM = ITEMS; int32 $s$i$z$e = Arr_Size(ITEMS);  WhileTrue(ITEM++ < &ITEMS[$s$i$z$e]) {
 #define EForEach }}
+#define ForRange(T, ITEM, FROM, TO) { T ITEM = FROM; WhileTrue(++ITEM < TO) {
+#define EForRange }}
 #define ThrowErr(errNumber, errMessage, ...)            \
     do {                                                \
         fprintf(stderr, "ERROR %d: ", errNumber);       \
@@ -31,8 +33,6 @@
         fprintf(stderr, "\n");                          \
         exit(errNumber);                                \
     } while (0)
-#define ForRange(T, ITEM, FROM, TO) { T ITEM = FROM; WhileTrue(++ITEM < TO) {
-#define EForRange }}
 
 typedef const char *       cstring;
 typedef unsigned char      int8;
@@ -50,7 +50,7 @@ typedef int64              mask;
 #define $int (int *)
 #define $void (void *)
 
-#define MAX_ENTITIES 2048
+#define MAX_ENTITIES 4000
 #define MAX_COMPONENTS_PER_ENTITY 64
 #define NULL_ENTITY 0
 

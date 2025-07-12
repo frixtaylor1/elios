@@ -38,5 +38,6 @@ Elios_Public void    clean_up_entity_manager();
 Elios_Public int32   add_entity();
 Elios_Public Entity *get_entity(const int32 id);
 Elios_Public void    remove_entity(int32 id);
+Elios_Public int32   get_nb_entities();
 
 #endif // entity_H

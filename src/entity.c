@@ -161,3 +161,7 @@ Elios_Private Elios_Constructor void init_module() {
   mutex_init(ENTITY_MUTEX_ID);
   init_entity_manager();
 } 
+
+Elios_Public int32 get_nb_entities() {
+  return entityManager.nbEntities;
+}
