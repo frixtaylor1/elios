@@ -8,12 +8,6 @@
 
 typedef void (*SystemFunction)(int thread_id, int start, int end);
 
-Elios_Public void thread_pool_init();
-Elios_Public void dispatch_system(SystemFunction function);
-Elios_Public void sync_threads();
-Elios_Public void thread_pool_shutdown();
-Elios_Public void thread_sleep(int32 value);
-
 #ifdef _WIN32
     #include <windows.h>
 
@@ -23,11 +17,10 @@ Elios_Public void thread_sleep(int32 value);
 
     #define native_wait_for_signal(hHandle) WaitForSingleObject(hHandle, INFINITE)
 
-    #define native_init_threads(thread_fn, thread, start_event, done_event, thread_id)  \
-        native_wait_for_signal(thread);                                                 \
-        start_event = CreateEvent(NULL, FALSE, FALSE, NULL);                            \
-        done_event  = CreateEvent(NULL, FALSE, FALSE, NULL);                            \
-        thread      = CreateThread(NULL, 0, thread_fn, &thread_id, 0, NULL);
+    #define native_init_threads(thread_fn, thread, start_event, done_event, thread_id_ptr)  \
+        start_event = CreateEvent(NULL, FALSE, FALSE, NULL);                                \
+        done_event  = CreateEvent(NULL, FALSE, FALSE, NULL);                                \
+        thread      = CreateThread(NULL, 0, thread_fn, thread_id_ptr, 0, NULL)
 
     #define NativeSetEventFunctionType BOOL
     #define native_set_event SetEvent
@@ -38,7 +31,7 @@ Elios_Public void thread_sleep(int32 value);
         CloseHandle(start_event);                                   \
         CloseHandle(done_event);
 
-    #define native_sleep Sleep
+    #define native_sleep(ms) Sleep(ms)
 
 #else
     #include <pthread.h>
@@ -51,10 +44,10 @@ Elios_Public void thread_sleep(int32 value);
 
     #define native_wait_for_signal(sem) sem_wait(&sem)
 
-    #define native_init_threads(thread_fn, thread, start_event, done_event, thread_id)  \
-        sem_init(&start_event, 0, 0);                                                   \
-        sem_init(&done_event, 0, 0);                                                    \
-        pthread_create(thread, NULL, thread_fn, &thread_id);
+    #define native_init_threads(thread_fn, thread, start_event, done_event, thread_id_ptr)  \
+        sem_init(&start_event, 0, 0);                                                       \
+        sem_init(&done_event, 0, 0);                                                        \
+        pthread_create(&thread, NULL, thread_fn, thread_id_ptr)
 
     #define NativeSetEventFunctionType int
     #define native_set_event(sem) sem_post(&sem)
@@ -64,83 +57,72 @@ Elios_Public void thread_sleep(int32 value);
         sem_destroy(&start_event);                                  \
         sem_destroy(&done_event);
 
-    #define native_sleep(value) usleep(value * 1000)
+    #define native_sleep(ms) usleep(ms * 1000)
 #endif
 
-Elios_Private Native_Handle       threads[NUM_THREADS];
-Elios_Private Native_Handle_Event start_events[NUM_THREADS];
-Elios_Private Native_Handle_Event done_events[NUM_THREADS];
+static Native_Handle       threads[NUM_THREADS];
+static Native_Handle_Event start_events[NUM_THREADS];
+static Native_Handle_Event done_events[NUM_THREADS];
 
-typedef NativeSetEventFunctionType (*NativeEventCallback)(Native_Handle_Event);
-typedef NativeSetEventFunctionType (*NativeCallback)(Native_Handle);
-#define for_all_handles_and_events(execute) for (int idx = 0; idx < NUM_THREADS; idx++) { execute(threads[idx], start_events[idx], done_events[idx]); }
+static int thread_ids[NUM_THREADS];
+static SystemFunction current_function = NULL;
+static volatile int stop_threads = 0;
 
-Elios_Private void for_each_native_handle(NativeCallback callback) {
-    ForEach (Native_Handle *, thread, threads) {
-        callback(thread);
-    } EForEach;
-}
-
-Elios_Private void for_each_native_handle_event(Native_Handle_Event *events, NativeEventCallback callback) {
-    Native_Handle_Event *event = events;
-    WhileTrue ($void ++event < $void &events[NUM_THREADS]) {
-        callback(event);
-    }
-}
-
-Elios_Private int thread_ids[NUM_THREADS];
-Elios_Private SystemFunction current_function = NULL;
-Elios_Private volatile int stop_threads = 0;
-
-Elios_Private Thread_Func {
-    int thread_id = *(int*)arg;
+Thread_Func {
+    int thread_id = *(int *)arg;
 
     WhileFalse (stop_threads) {
         native_wait_for_signal(start_events[thread_id]);
 
-        IfTrue (stop_threads) break;
+        IfTrue(stop_threads) break;
 
         int start = thread_id * CHUNK_SIZE;
-        int end   = start + CHUNK_SIZE;
+        int end   = (thread_id + 1) * CHUNK_SIZE;
+        IfTrue (end > MAX_ENTITIES) end = MAX_ENTITIES;
 
-        IfTrue (!!current_function) current_function(thread_id, start, end);
+        IfTrue ((bool) current_function) {
+            current_function(thread_id, start, end);
+        }
 
-        native_set_event(&done_events[thread_id]);
+        native_set_event(done_events[thread_id]);
     }
 
     return 0;
 }
 
-Elios_Public void thread_pool_init() {
+void thread_pool_init() {
     stop_threads = 0;
-
-    int i = 0;
-    WhileTrue (++i < NUM_THREADS) {
+    ForRange (int, i, 0, NUM_THREADS)
         thread_ids[i] = i;
-        native_init_threads(thread_func, threads[i], start_events[i], done_events[i], thread_ids[i]);
-    }
-}
- 
-Elios_Public void dispatch_system(SystemFunction callback) {
-    current_function = callback;
-    for_each_native_handle_event(start_events, &native_set_event);
+        native_init_threads(thread_func, threads[i], start_events[i], done_events[i], &thread_ids[i]);
+    EForRange;
 }
 
-Elios_Public void sync_threads() {
-    for_each_native_handle_event(start_events, &native_set_event);
-    for (int i = 0; i < NUM_THREADS; i++) {
+void dispatch_system(SystemFunction function) {
+    current_function = function;
+    ForRange (int, i, 0, NUM_THREADS)
+        native_set_event(start_events[i]);
+    EForRange;
+}
+
+void sync_threads() {
+    ForRange (int, i, 0, NUM_THREADS)
         native_wait_for_signal(done_events[i]);
-    }
+    EForRange;
     current_function = NULL;
 }
 
-Elios_Public void thread_pool_shutdown() {
+void thread_pool_shutdown() {
     stop_threads = 1;
+    ForRange (int, i, 0, NUM_THREADS)
+        native_set_event(start_events[i]);
+    EForRange;
 
-    for_each_native_handle(&native_set_event);
-    for_all_handles_and_events(native_destroy_threads);
+    ForRange (int, i, 0, NUM_THREADS)
+        native_destroy_threads(threads[i], start_events[i], done_events[i]);
+    EForRange;
 }
 
-Elios_Public void thread_sleep(int32 value) {
+void thread_sleep(int32 value) {
     native_sleep(value);
 }

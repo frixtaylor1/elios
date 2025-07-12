@@ -19,13 +19,13 @@ Elios_Private void print_mask_entity(mask m) {
    * For a mask with the first 3 components looks like this:
    * 000000000000000000000000000000000000000000000000000000000000111
    */
-  for (int32 i = 0; i < MAX_COMPONENTS_PER_ENTITY; i++) {
-    if (m & (1LL << i)) {
+  ForRange(int32, i, 0, MAX_COMPONENTS_PER_ENTITY)
+    IfTrue (m & (1LL << i)) {
       printf("1");
-    } else {
-      printf("0");
+      continue;
     }
-  }
+    printf("0");
+  EForRange;
   printf("\n");
 }
 
@@ -66,6 +66,8 @@ Elios_Public void add_component(Entity *entity, ComponentType component, void *c
     case CMP_HEALTH:    add_health_component(entity->id, content, sizeof(HealthComponent));       break;
     case CMP_RENDER:    add_render_component(entity->id, content, sizeof(RenderComponent));       break;
     case CMP_COLLISION: add_collision_component(entity->id, content, sizeof(CollisionComponent)); break;
+    case CMP_TRANSFORM: add_transform_component(entity->id, content, sizeof(TransformComponent)); break;
+    case CMP_PHYSICS:   add_physics_component(entity->id, content, sizeof(PhysicsComponent));     break;
     case CMP_COUNT:     break;
   }
 }
@@ -76,6 +78,8 @@ Elios_Public void *get_component(const Entity *entity, ComponentType component) 
       case CMP_HEALTH:    return get_health_component(entity->id);    break;
       case CMP_RENDER:    return get_render_component(entity->id);    break;
       case CMP_COLLISION: return get_collision_component(entity->id); break;
+      case CMP_TRANSFORM: return get_transform_component(entity->id); break;
+      case CMP_PHYSICS:   return get_physics_component(entity->id);   break;
       case CMP_COUNT:     break;
     }
   }
@@ -99,23 +103,23 @@ Elios_Public void inspect_entity(const Entity *entity) {
   printf("Entity id: %d\n", entity->id);
   print_mask_entity(entity->components);
   int16 componentTypeId = 0;
-  ForEach (cstring *, componentName, ComponentsName) {
+  ForEach (cstring *, componentName, ComponentsName)
     IfTrue (has_component(entity, componentTypeId)) {
       printf("\t-> %s\n", ComponentsName[componentTypeId]);
     }
     componentTypeId++;
-  } EForEach;
+  EForEach;
   printf("........................................................................................................\n");
 }
 
 Elios_Public void for_each_component_of_entity(const Entity *entity, ActionComponent callback) {
   int16 componentTypeId = 0;
-  ForEach (cstring *, componentName, ComponentsName) {
+  ForEach (cstring *, componentName, ComponentsName)
     IfTrue (has_component(entity, componentTypeId)) {
       void *ptr = get_component(entity, componentTypeId++);
       callback(ptr);
     }
-  } EForEach;
+  EForEach;
 }
 
 Elios_Public void clean_up_entity_manager() {
@@ -133,11 +137,11 @@ Elios_Public int32 add_entity() {
 }
 
 Elios_Public Entity *get_entity(const int32 id) {
-  ForEach(Entity *, entity, entityManager.entities) {
+  ForEach(Entity *, entity, entityManager.entities)
     IfTrue (entity_has_equal_id(entity, id)) {
       return entity;
     }
-  } EForEach;
+  EForEach;
   return NULL_ENTITY;
 }
 
