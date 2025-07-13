@@ -20,11 +20,12 @@ Elios_Private void print_mask_entity(mask m) {
    * 000000000000000000000000000000000000000000000000000000000000111
    */
   ForRange(int32, i, 0, MAX_COMPONENTS_PER_ENTITY)
-    IfTrue (m & (1LL << i)) {
+    IfTrue ((bool) (m & (1LL << i))) {
       printf("1");
-      continue;
     }
-    printf("0");
+    else {
+      printf("0");
+    }
   EForRange;
   printf("\n");
 }
@@ -58,8 +59,9 @@ Elios_Private void init_entity_manager() {
  */
 
 
-Elios_Public void add_component(Entity *entity, ComponentType component, void *content) {
+Elios_Public void add_component(Entity *entity, int component, void *content) {
   IfTrue (has_component(entity, component)) return;
+  
   entity->components |= (1LL << component);
 
   switch (component) {
@@ -72,7 +74,7 @@ Elios_Public void add_component(Entity *entity, ComponentType component, void *c
   }
 }
 
-Elios_Public void *get_component(const Entity *entity, ComponentType component) {
+Elios_Public void *get_component(const Entity *entity, int component) {
   IfTrue (has_component(entity, component)) {
     switch (component) {
       case CMP_HEALTH:    return get_health_component(entity->id);    break;
@@ -86,7 +88,7 @@ Elios_Public void *get_component(const Entity *entity, ComponentType component) 
   return NULL;
 }
 
-Elios_Public void remove_component(Entity *entity, ComponentType component) {
+Elios_Public void remove_component(Entity *entity, int component) {
   IfTrue (has_component(entity, component)) {
     entity->components &= ~(1LL << component);
     void* ptr = get_component(entity, component);
@@ -94,7 +96,7 @@ Elios_Public void remove_component(Entity *entity, ComponentType component) {
   }
 }
 
-Elios_Public bool has_component(const Entity *entity, ComponentType component) {
+Elios_Public bool has_component(const Entity *entity, int component) {
   return entity->components & (1LL << component);
 }
 

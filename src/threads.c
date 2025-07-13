@@ -1,10 +1,10 @@
 #include <threads/threads.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <entities/entity.h>
 #include <elios.h>
 
 #define NUM_THREADS 4
-#define CHUNK_SIZE (MAX_ENTITIES / NUM_THREADS)
 
 typedef void (*SystemFunction)(int thread_id, int start, int end);
 
@@ -76,8 +76,10 @@ Thread_Func {
 
         IfTrue(stop_threads) break;
 
-        int start = thread_id * CHUNK_SIZE;
-        int end   = (thread_id + 1) * CHUNK_SIZE;
+        int chunksize = get_nb_entities() / NUM_THREADS;
+
+        int start = thread_id * chunksize;
+        int end   = (thread_id + 1) * chunksize;
         IfTrue (end > MAX_ENTITIES) end = MAX_ENTITIES;
 
         IfTrue ((bool) current_function) {

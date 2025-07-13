@@ -4,7 +4,6 @@
 #include <elios.h>
 
 #define NUM_THREADS 4
-#define CHUNK_SIZE (MAX_ENTITIES / NUM_THREADS)
 
 typedef void (*SystemFunction)(int thread_id, int start, int end);
 

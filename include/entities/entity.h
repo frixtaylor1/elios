@@ -2,7 +2,6 @@
 #define entity_H
 
 #include "../elios.h"
-#include <components/components.h>
 
 typedef struct {
   mask components;
@@ -24,10 +23,10 @@ typedef void (*ActionComponent)(void *component);
  */
 
 Elios_Public void for_each_component_of_entity(const Entity *entity, ActionComponent callback);
-Elios_Public void add_component(Entity *entity, ComponentType component, void* content);
-Elios_Public void *get_component(const Entity *entity, ComponentType type);
-Elios_Public void remove_component(Entity *entity, ComponentType component);
-Elios_Public bool has_component(const Entity *entity, ComponentType component);
+Elios_Public void add_component(Entity *entity, int component, void *content);
+Elios_Public void *get_component(const Entity *entity, int type);
+Elios_Public void remove_component(Entity *entity, int component);
+Elios_Public bool has_component(const Entity *entity, int component);
 Elios_Public void inspect_entity(const Entity *entity);
 
 /*

@@ -14,7 +14,7 @@ Elios_Private Camera3D camera = {
     .projection = CAMERA_PERSPECTIVE
 };
 
-Mesh cubeMesh = {0};
+Mesh     cubeMesh = {0};
 Material cubeMaterial = {0};
 
 void health_system(int threadId, int start, int end) {
@@ -35,11 +35,12 @@ void render_system() {
     BeginMode3D(camera);
     ForRange (int32, id, 0, get_nb_entities())
         Entity *e = get_entity(id);
-        RenderComponent    *r = get_component(e, CMP_RENDER);
-        TransformComponent *t = get_component(e, CMP_TRANSFORM);
-        DrawMesh(cubeMesh, cubeMaterial, MatrixTranslate(t->position.x, t->position.y, t->position.z));
-        cubeMaterial.maps[MATERIAL_MAP_DIFFUSE].color = r->color;
-
+        IfTrue (has_component(e, CMP_TRANSFORM) && has_component(e, CMP_PHYSICS)) {
+            RenderComponent    *r = get_component(e, CMP_RENDER);
+            TransformComponent *t = get_component(e, CMP_TRANSFORM);
+            DrawMesh(cubeMesh, cubeMaterial, MatrixTranslate(t->position.x, t->position.y, t->position.z));
+            cubeMaterial.maps[MATERIAL_MAP_DIFFUSE].color = r->color;
+        }
     EForRange;
 
     DrawGrid(20, 10.0f);
@@ -53,6 +54,7 @@ void physics_system(int threadId, int start, int end) {
     float dt = GetFrameTime();
     ForRange (int, id, start, end)
         Entity *e = get_entity(id);
+
         IfFalse (!!e) continue;
 
         IfTrue (has_component(e, CMP_TRANSFORM) && has_component(e, CMP_PHYSICS)) {
@@ -70,14 +72,14 @@ void physics_system(int threadId, int start, int end) {
 
 void init_entities() {
     rlSetClipPlanes(0.1, 3000.0);
-    cubeMesh = GenMeshCube(1.5f, 1.5f, 1.5f);
+    cubeMesh = GenMeshCube(2.5, 2.5, 2.5);
     cubeMaterial = LoadMaterialDefault();
     cubeMaterial.maps[MATERIAL_MAP_METALNESS].color = RED;
 
-    ForRange (int32, i, 0, MAX_ENTITIES - 1)
+    ForRange (int32, i, 0, 1024)
         int32 id = add_entity();
         Entity *e = get_entity(id);
-        IfFalse (!!e) ThrowErr(1, "Null entity at ID: %d", id);
+        IfFalse ((bool) e) ThrowErr(1, "Null entity at ID: %d", id);
 
         Vector3 pos = {
             GetRandomValue(-50, 50),
@@ -90,7 +92,7 @@ void init_entities() {
         add_component(e, CMP_TRANSFORM, $void &(TransformComponent){
             .position = pos,
             .rotation = { 0, 0, 0 },
-            .scale = { 1.5f, 1.5f, 1.5f }
+            .scale = { 2.5, 2.5, 2.5 }
         });
 
         add_component(e, CMP_RENDER, $void &(RenderComponent){
@@ -106,20 +108,23 @@ void init_entities() {
         add_component(e, CMP_PHYSICS, $void &(PhysicsComponent){
             .velocity = vel
         });
+
+        inspect_entity(e);
     EForRange;
 }
 
 int main() {
     InitWindow(1280, 800, "ELIOS 3D Stress Test");
-
     init_entities();
-
     thread_pool_init();
+
     thread_sleep(1500);
 
+    // SetTargetFPS(60);
+
     WhileFalse (WindowShouldClose()) {
-        dispatch_system(&health_system);
-        sync_threads();
+        // dispatch_system(&health_system);
+        // sync_threads();
 
         dispatch_system(&physics_system);
         sync_threads();
@@ -128,8 +133,8 @@ int main() {
     }
 
     UnloadMesh(cubeMesh);
-
     CloseWindow();
     thread_pool_shutdown();
+
     return 0;
 }
