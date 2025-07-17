@@ -1,7 +1,7 @@
 CXX              = gcc
 CXX_DEV_OP       = -O0
 CXX_PROD_OP      = -O3
-OP_FLAG          = $(CXX_DEV_OP)
+OP_FLAG          = $(CXX_PROD_OP)
 CXX_FLAGS        = -Wextra -Wall -Wpedantic $(OP_FLAG) -g -MMD -MP
 CC               = $(CXX) $(CXX_FLAGS)
 
@@ -21,6 +21,10 @@ OBJS        += $(BIN_DIR)/alloc.o
 OBJS        += $(BIN_DIR)/heap.o
 OBJS        += $(BIN_DIR)/synch.o
 OBJS        += $(BIN_DIR)/threads.o
+OBJS        += $(BIN_DIR)/systems.o
+OBJS        += $(BIN_DIR)/ui.o
+OBJS        += $(BIN_DIR)/pool_alloc.o
+OBJS        += $(BIN_DIR)/engine.o
 
 LIBS = -L$(DEPENDENCIES_DIR)/raylib -lraylib -lopengl32 -lgdi32 -lwinmm
 
@@ -38,6 +42,9 @@ $(BIN_DIR)/entity.o: $(SRC_DIR)/entity.c $(BIN_DIR)/alloc.o
 $(BIN_DIR)/alloc.o: $(SRC_DIR)/alloc.c $(BIN_DIR)/heap.o
 	$(OBJ_COMMAND)
 
+$(BIN_DIR)/pool_alloc.o: $(SRC_DIR)/pool_alloc.c
+	$(OBJ_COMMAND)
+
 $(BIN_DIR)/components.o: $(SRC_DIR)/components.c
 	$(OBJ_COMMAND)
 
@@ -48,6 +55,15 @@ $(BIN_DIR)/synch.o: $(SRC_DIR)/synch.c
 	$(OBJ_COMMAND)
 
 $(BIN_DIR)/threads.o: $(SRC_DIR)/threads.c
+	$(OBJ_COMMAND)
+
+$(BIN_DIR)/systems.o: $(SRC_DIR)/systems.c
+	$(OBJ_COMMAND)
+
+$(BIN_DIR)/ui.o: $(SRC_DIR)/ui.c
+	$(OBJ_COMMAND)
+
+$(BIN_DIR)/engine.o: $(SRC_DIR)/engine.c
 	$(OBJ_COMMAND)
 
 $(BIN_DIR):

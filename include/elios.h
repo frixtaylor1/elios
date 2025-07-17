@@ -18,6 +18,15 @@
 
 #define Arr_Size(x) sizeof(x)/sizeof(x[0])
 #define Arr_SafeIterate(item, items) (item < &items[Arr_Size(items)])
+#define While(cond_expr, block)                  \
+    {                                            \
+        goto Elios_Loop_Start;                   \
+        Elios_Loop_Start:                        \
+        IfFalse (cond_expr) goto Elios_Loop_End; \
+        block;                                   \
+        goto Elios_Loop_Start;                   \
+        Elios_Loop_End:;                         \
+    }
 #define WhileTrue(x) while((x) == true)
 #define WhileFalse(x) while((x) == false)
 #define IfTrue(x) if ((x) == true)
@@ -26,12 +35,13 @@
 #define EForEach }}
 #define ForRange(T, ITEM, FROM, TO) { T ITEM = FROM; WhileTrue(++ITEM < TO) {
 #define EForRange }}
-#define ThrowErr(errNumber, errMessage, ...)            \
-    do {                                                \
-        fprintf(stderr, "ERROR %d: ", errNumber);       \
-        fprintf(stderr, errMessage, ##__VA_ARGS__);     \
-        fprintf(stderr, "\n");                          \
-        exit(errNumber);                                \
+
+#define ThrowErr(errNumber, errMessage, ...)        \
+    do {                                            \
+        fprintf(stderr, "ERROR %d:", errNumber);    \
+        fprintf(stderr, errMessage, ##__VA_ARGS__); \
+        fprintf(stderr, "\n");                      \
+        exit(errNumber);                            \
     } while (0)
 
 typedef const char *       cstring;
@@ -50,7 +60,7 @@ typedef int64              mask;
 #define $int (int *)
 #define $void (void *)
 
-#define MAX_ENTITIES 4000
+#define MAX_ENTITIES 7000
 #define MAX_COMPONENTS_PER_ENTITY 64
 #define NULL_ENTITY 0
 

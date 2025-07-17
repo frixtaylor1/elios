@@ -20,8 +20,8 @@
 #endif
 
 /**
- *internal_mutex[0] is reserved for entity array access
- *internal_mutex[1..MAX_CAP_OF_MUTEX] used for components #define 
+ * - internal_mutex[0] is reserved for entity array access
+ * - internal_mutex[1..MAX_CAP_OF_MUTEX] used for components #define 
  */
 #define MAX_CAP_OF_MUTEX MAX_COMPONENTS_PER_ENTITY + 1
 

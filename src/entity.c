@@ -5,6 +5,9 @@
 #include <allocators/alloc.h>
 #include <components/components.h>
 #include <synch/synch.h>
+#include <threads/threads.h>
+#include <entities/entity.h>
+#include <components/components.h>
 
 /*
  * Definitions of private members...
@@ -32,10 +35,6 @@ Elios_Private void print_mask_entity(mask m) {
 
 Elios_Private bool keep_searching_entity(const Entity *entity) {
   return entity->alloced && entity < lastAddressEntityManager;
-}
-
-Elios_Private bool entity_has_equal_id(const Entity *entity, int32 id) {
-  return entity->id == id;
 }
 
 Elios_Private Entity* find_free_entity() {
@@ -139,12 +138,11 @@ Elios_Public int32 add_entity() {
 }
 
 Elios_Public Entity *get_entity(const int32 id) {
-  ForEach(Entity *, entity, entityManager.entities)
-    IfTrue (entity_has_equal_id(entity, id)) {
-      return entity;
-    }
-  EForEach;
-  return NULL_ENTITY;
+  Entity *res;
+  mutex_lock(ENTITY_MUTEX_ID);
+  res = &entityManager.entities[id];
+  mutex_unlock(ENTITY_MUTEX_ID);
+  return res;
 }
 
 Elios_Public void remove_entity(int32 id) {
@@ -166,4 +164,10 @@ Elios_Private Elios_Constructor void init_module() {
 
 Elios_Public int32 get_nb_entities() {
   return entityManager.nbEntities;
+}
+
+Elios_Public void mark_to_remove_entity(const int32 id) {
+  mutex_lock(ENTITY_MUTEX_ID);
+  entityManager.entities[id].toRemove = true;
+  mutex_unlock(ENTITY_MUTEX_ID);
 }

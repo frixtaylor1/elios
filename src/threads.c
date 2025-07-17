@@ -76,10 +76,11 @@ Thread_Func {
 
         IfTrue(stop_threads) break;
 
-        int chunksize = get_nb_entities() / NUM_THREADS;
-
+        int nb = get_nb_entities();
+        int chunksize = nb / NUM_THREADS;
         int start = thread_id * chunksize;
-        int end   = (thread_id + 1) * chunksize;
+        int end = (thread_id == NUM_THREADS - 1) ? nb : (thread_id + 1) * chunksize;
+
         IfTrue (end > MAX_ENTITIES) end = MAX_ENTITIES;
 
         IfTrue ((bool) current_function) {

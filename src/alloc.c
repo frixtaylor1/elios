@@ -8,7 +8,7 @@ typedef struct Elios_Packed  MemHeader {
   bool alloced: 1;
 } MemHeader;
 
-extern heap *memspace;
+Elios_Public extern heap *memspace;
 
 #define $header (MemHeader *)
 
