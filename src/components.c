@@ -1,10 +1,13 @@
 #include <components/components.h>
 #include <synch/synch.h>
 #include <allocators/alloc.h>
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-cstring ComponentsName[CMP_COUNT] = {
+#define BIN_STATE_FILES_PATH "./app_cache/.state%s.bin"
+
+c_string ComponentsName[CMP_COUNT] = {
     [CMP_HEALTH]    = "Health",
     [CMP_COLLISION] = "Collision",
     [CMP_RENDER]    = "Render",
@@ -17,6 +20,22 @@ Elios_Private void *CollisionComponents[MAX_ENTITIES] = {0};
 Elios_Private void *RenderComponents[MAX_ENTITIES]    = {0};
 Elios_Private void *TransformComponents[MAX_ENTITIES] = {0};
 Elios_Private void *PhysicsComponents[MAX_ENTITIES]   = {0};
+
+Elios_Private void *ComponentsContainers[CMP_COUNT] = {
+    [CMP_HEALTH]    = HealthComponents,
+    [CMP_COLLISION] = CollisionComponents,
+    [CMP_RENDER]    = RenderComponents,
+    [CMP_TRANSFORM] = TransformComponents,
+    [CMP_PHYSICS]   = PhysicsComponents
+};
+
+Elios_Private size_t ComponentSizes[CMP_COUNT] = {
+    [CMP_HEALTH]    = sizeof (HealthComponent),
+    [CMP_COLLISION] = sizeof (CollisionComponent),
+    [CMP_RENDER]    = sizeof (RenderComponent),
+    [CMP_TRANSFORM] = sizeof (TransformComponent),
+    [CMP_PHYSICS]   = sizeof (PhysicsComponent)
+};
 
 Elios_Private Elios_Constructor void init_module() {
     mutex_init(CMP_HEALTH);
@@ -94,4 +113,59 @@ Elios_Public void add_render_component(int32 entityId, void* content, int32 size
 
 Elios_Public void add_physics_component(int32 entityId, void* content, int32 size) {
     assign_component_threadsafe(PhysicsComponents, entityId, content, size, CMP_PHYSICS);
+}
+
+Elios_Private void format_file_name(const char *base, char *out, size_t maxLen) {
+    snprintf(out, maxLen, BIN_STATE_FILES_PATH, base);
+}
+
+Elios_Public void save_components_state() {
+    char fileName[64];
+
+    ForRange(int32, containerId, 0, CMP_COUNT) {
+        format_file_name(ComponentsName[containerId], fileName, sizeof(fileName));
+        FILE *file = fopen(fileName, "wb");
+        IfFalse ((bool) file) {
+            ThrowErr(1, "Cannot open file for writing");
+        }
+
+        void **container = (void **)ComponentsContainers[containerId];
+        size_t componentSize = ComponentSizes[containerId];
+
+        ForRange (int32, entityId, 0, MAX_ENTITIES)
+            IfTrue ((bool) container[entityId]) {
+                fwrite(&entityId, sizeof(int32), 1, file);
+                fwrite(container[entityId], componentSize, 1, file);
+            }
+        EForRange;
+
+        fclose(file);
+    } EForRange;
+}
+
+Elios_Public void reload_components_state() {
+    char fileName[64];
+
+    ForRange(int32, containerId, 0, CMP_COUNT) {
+        format_file_name(ComponentsName[containerId], fileName, sizeof(fileName));
+        FILE *file = fopen(fileName, "rb");
+        IfFalse ((bool) file) {
+            continue;
+        }
+
+        void **container = (void **)ComponentsContainers[containerId];
+        size_t componentSize = ComponentSizes[containerId];
+
+        int32 entityId;
+        WhileTrue ((bool) fread(&entityId, sizeof(int32), 1, file)) {
+            void *component = mem_alloc(componentSize);
+            IfTrue (fread(component, componentSize, 1, file) != 1) {
+                free(component);
+                break;
+            }
+            container[entityId] = component;
+        }
+
+        fclose(file);
+    } EForRange;
 }

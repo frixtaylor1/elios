@@ -1,4 +1,3 @@
-
 #ifndef components_H
 #define components_H
 #include <elios.h>
@@ -37,7 +36,7 @@ typedef enum {
     CMP_COUNT
 } ComponentType;
 
-Elios_Public extern cstring ComponentsName[CMP_COUNT];
+Elios_Public extern c_string ComponentsName[CMP_COUNT];
 
 Elios_Public void *get_health_component(int32 entityId);
 Elios_Public void *get_collision_component(int32 entityId);
@@ -50,5 +49,7 @@ Elios_Public void add_collision_component(int32 entityId, void *content, int32 s
 Elios_Public void add_transform_component(int32 entityId, void *content, int32 size);
 Elios_Public void add_render_component(int32 entityId, void *content, int32 size);
 Elios_Public void add_physics_component(int32 entityId, void *content, int32 size);
+Elios_Public void save_components_state();
+Elios_Public void reload_components_state();
 
 #endif // components_H

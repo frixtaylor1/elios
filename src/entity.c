@@ -8,6 +8,10 @@
 #include <threads/threads.h>
 #include <entities/entity.h>
 #include <components/components.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define ENTITIES_BIN_NAME "./app_cache/.stateEntities.bin"
 
 /*
  * Definitions of private members...
@@ -104,7 +108,7 @@ Elios_Public void inspect_entity(const Entity *entity) {
   printf("Entity id: %d\n", entity->id);
   print_mask_entity(entity->components);
   int16 componentTypeId = 0;
-  ForEach (cstring *, componentName, ComponentsName)
+  ForEach (c_string *, componentName, ComponentsName)
     IfTrue (has_component(entity, componentTypeId)) {
       printf("\t-> %s\n", ComponentsName[componentTypeId]);
     }
@@ -115,7 +119,7 @@ Elios_Public void inspect_entity(const Entity *entity) {
 
 Elios_Public void for_each_component_of_entity(const Entity *entity, ActionComponent callback) {
   int16 componentTypeId = 0;
-  ForEach (cstring *, componentName, ComponentsName)
+  ForEach (c_string *, componentName, ComponentsName)
     IfTrue (has_component(entity, componentTypeId)) {
       void *ptr = get_component(entity, componentTypeId++);
       callback(ptr);
@@ -170,4 +174,35 @@ Elios_Public void mark_to_remove_entity(const int32 id) {
   mutex_lock(ENTITY_MUTEX_ID);
   entityManager.entities[id].toRemove = true;
   mutex_unlock(ENTITY_MUTEX_ID);
+}
+
+Elios_Public void save_entities_state() {
+  FILE *file = fopen(ENTITIES_BIN_NAME, "wb");
+  IfFalse ((bool) file) ThrowErr(55, "Error opening file.");
+
+  int32 writtenEntities = fwrite(entityManager.entities, sizeof(Entity), entityManager.nbEntities, file);
+  
+  IfFalse (writtenEntities == entityManager.nbEntities) {
+    fclose(file);
+    ThrowErr(56, "Error writting file with entities state.");
+  }
+  fclose(file);
+}
+
+Elios_Public void reload_entities_state() {
+    FILE *file = fopen(ENTITIES_BIN_NAME, "rb");
+    IfFalse ((bool) file) ThrowErr(55, "Error opening entity state file.");
+
+    init_entity_manager();
+
+    int32 read = fread(entityManager.entities, sizeof(Entity), MAX_ENTITIES, file);
+
+    fclose(file);
+
+    int32 count = 0;
+    ForRange (int32, i, 0, read)
+        IfTrue (entityManager.entities[i].alloced)
+            count++;
+    EForRange;
+    entityManager.nbEntities = count;
 }

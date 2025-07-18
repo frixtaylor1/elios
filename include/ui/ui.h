@@ -10,6 +10,7 @@ typedef struct Button {
 	Rectangle           dimentions;
 	ButtonClickCallback callback;
 	Color               color;
+	c_string            textContent;
 } Button;
 
 Elios_Public void init_ui();

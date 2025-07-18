@@ -3,14 +3,11 @@
 #include <entities/entity.h>
 #include <threads/threads.h>
 #include <engine/engine.h>
-#include <ui/ui.h>
-#include <stdio.h>
 
 int main() {
     InitWindow(1280, 720, "ELIOS 3D Stress Test");
-
+    init_render_system();
     init_entities();
-    init_ui();
     thread_pool_init();
 
     thread_sleep(1500);
@@ -27,10 +24,6 @@ int main() {
             dispatch_system(&physics_system);
             sync_threads();
         }
-
-        update_ui();
-        render_ui();
-
         render_system();
     }
 

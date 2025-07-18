@@ -44,7 +44,7 @@
         exit(errNumber);                            \
     } while (0)
 
-typedef const char *       cstring;
+typedef const char *       c_string;
 typedef unsigned char      int8;
 typedef unsigned short     int16;
 typedef unsigned int       int32;

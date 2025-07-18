@@ -4,7 +4,9 @@
 #include <raylib/raylib.h>
 #include <raylib/raymath.h>
 #include <raylib/rlgl.h>
+#include <ui/ui.h>
 #include <stdio.h>
+
 
 Elios_Private Camera3D camera = {
     .position = { 50.0f, 50.0f, 150.0f },
@@ -128,7 +130,11 @@ Elios_Public void render_system() {
     // DrawGrid(20, 10.0f);
 
     EndMode3D();
-    DrawFPS(10, 10);
+    DrawFPS(GetScreenWidth() - 100, 10);
+    
+    update_ui();
+    render_ui();
+
     EndDrawing();
 }
 
@@ -190,6 +196,10 @@ Elios_Public void init_entities() {
             .velocity = vel
         });
     EForRange;
+}
+
+Elios_Public void init_render_system() {
+    init_ui();
 }
 
 Elios_Public void destroy_entities() {

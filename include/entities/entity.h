@@ -42,5 +42,8 @@ Elios_Public void    mark_to_remove_entity(const int32 id);
 Elios_Public int32   get_nb_entities();
 Elios_Public void    init_entities();
 Elios_Public void    destroy_entities();
+Elios_Public void    save_entities_state();
+Elios_Public void    reload_entities_state();
+
 
 #endif // entity_H

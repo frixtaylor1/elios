@@ -8,5 +8,5 @@ Elios_Public void physics_system(int threadId, int start, int end);
 Elios_Public void render_system();
 Elios_Public void init_entities();
 Elios_Public void destroy_entities();
-
+Elios_Public void init_render_system();
 #endif // system_H

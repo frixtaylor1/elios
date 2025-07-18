@@ -10,8 +10,8 @@ typedef struct PoolAllocator {
 	int32 capacity;
 } PoolAllocator;
 
-Elios_Public void pool_init(PoolAllocator *poolAllocator, int32 maxItems, int32 itemSize);
+Elios_Public void  pool_init(PoolAllocator *poolAllocator, int32 maxItems, int32 itemSize);
 Elios_Public void *pool_mem_alloc(PoolAllocator *poolAllocator);
-Elios_Public void pool_dealloc(PoolAllocator *poolAllocator);
+Elios_Public void  pool_dealloc(PoolAllocator *poolAllocator);
 
 #endif // pool_alloc_H
