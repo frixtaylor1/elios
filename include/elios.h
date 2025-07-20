@@ -12,7 +12,7 @@
 
 #define Elios_Packed  __attribute__((packed))
 #define Elios_Public __attribute__((visibility("default")))
-#define Elios_Private static
+#define Elios_Private static 
 #define Elios_Constructor __attribute__((constructor))
 #define Elios_Destructor __attribute__((destructor))
 
@@ -33,7 +33,7 @@
 #define IfFalse(x) if ((x) == false)
 #define ForEach(T, ITEM, ITEMS) { T ITEM = ITEMS; int32 $s$i$z$e = Arr_Size(ITEMS);  WhileTrue(ITEM++ < &ITEMS[$s$i$z$e]) {
 #define EForEach }}
-#define ForRange(T, ITEM, FROM, TO) { T ITEM = FROM; WhileTrue(++ITEM < TO) {
+#define ForRange(T, ITEM, FROM, TO) { for (T ITEM = FROM; ITEM < TO; ++ITEM) {
 #define EForRange }}
 
 #define ThrowErr(errNumber, errMessage, ...)        \

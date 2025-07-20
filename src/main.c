@@ -11,15 +11,9 @@ int main() {
     thread_pool_init();
 
     thread_sleep(1500);
-    IfTrue (get_engine_mode() == DEV_MODE) {
-        EnableCursor();
-    }
+    EnableCursor();
 
-    IfTrue (get_engine_mode() == GAME_MODE) {
-        DisableCursor();
-    }
-
-     WhileFalse (WindowShouldClose()) {
+    WhileFalse (WindowShouldClose()) {
         IfTrue (get_engine_mode() == GAME_MODE) {
             dispatch_system(&physics_system);
             sync_threads();

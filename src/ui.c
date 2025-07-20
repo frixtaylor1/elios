@@ -1,118 +1,204 @@
+// Refactored UI System for better reuse and modularity
 #include <ui/ui.h>
 #include <controller/controller.h>
 
-#define SIDE_BAR_WIDTH 80.0f
-#define SIDE_BAR_BUTTON_WIDTH 72.0f
+#define MAX_UI_BUTTONS      64
+#define MAX_LABELED_TEXT    64
+#define BUTTON_HEIGHT       22.f
+#define BUTTON_SPACING      5.f
+#define WINDOW_PADDING      10.f
+#define FONT_SIZE           7
+#define FONT_SIZE_SPACING   14.f
 
-Elios_Private Button change_mode_button = {0};
-Elios_Private Button save_state_button = {0};
-Elios_Private Button reload_state_button = {0};
+typedef struct UIButton {
+    Rectangle rec;
+    c_string  text;
+    Color     color;
+    ButtonClickCallback callback;
+} UIButton;
 
-Elios_Private bool mouse_over_rect(const Rectangle *rect) {
-	Rectangle mouse = (Rectangle) {
-		.x = GetMousePosition().x,
-		.y = GetMousePosition().y,
-		.width = 4.f,
-		.height = 4.f
-	};
-	return (CheckCollisionRecs(*rect, mouse));
+typedef c_string (*DynamicTextCallback)(void); 
+
+typedef struct UILabel {
+    Vector2 pos;
+    float size;
+    Color color;
+
+    DynamicTextCallback dynamicText;
+    c_string staticText;
+} UILabel;
+
+typedef struct UILabeledText {
+    UILabel label;
+    UILabel content;
+} UILabeledText;
+
+typedef struct UIWindow {
+    c_string title;
+    Rectangle rec;
+    UIButton toggle;
+    UIButton buttons[MAX_UI_BUTTONS];
+    int32 nbButtons;
+    UILabeledText texts[MAX_LABELED_TEXT];
+    int32 nbTexts;
+    bool toggled;
+} UIWindow;
+
+
+/**
+ * UI Engine State
+ */
+
+Elios_Private UIWindow leftPanel;
+Elios_Private UIWindow rightPanel;
+
+/**
+ * Core UI Utility...
+ */
+
+Elios_Private bool mouse_over_rect(const Rectangle *rec) {
+    Rectangle mouse = { GetMousePosition().x, GetMousePosition().y, 4.f, 4.f };
+    return CheckCollisionRecs(*rec, mouse);
 }
 
-Elios_Private bool is_mouse_over_button(const Button *button) {
-	return mouse_over_rect(&button->dimentions);
+Elios_Private bool is_button_hovered(const UIButton *btn) {
+    return mouse_over_rect(&btn->rec);
 }
 
-Elios_Private bool is_mouse_clicking_button(const Button *button) {
-	return (is_mouse_over_button(button) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT));
+Elios_Private bool is_button_clicked(const UIButton *btn) {
+    return is_button_hovered(btn) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
 
-Elios_Private void render_button(Button *button) {
-	DrawRectangleRounded(button->dimentions, 0.4f, 4, button->color);
-	IfTrue (is_mouse_over_button(button)) {
-		button->color = GetColor(0xAAAAAAFF);
-		IfTrue (is_mouse_clicking_button(button)) {
-			button->color = GetColor(0x777777FF);
-		}
-	} else {
-		button->color = GetColor(0xFFFFFFFF);
-	}
-	DrawText(button->textContent, button->dimentions.x + 5, button->dimentions.y + 5, 7, BLACK);
+Elios_Private void render_button(UIButton *btn) {
+    Color base = btn->color;
+    IfTrue (is_button_hovered(btn)) base = GetColor(0xAAAAAAFF);
+    IfTrue (is_button_clicked(btn)) base = GetColor(0x777777FF);
+
+    DrawRectangleRounded(btn->rec, 0.4f, 4, base);
+    DrawText(btn->text, btn->rec.x + 5, btn->rec.y + 5, FONT_SIZE, BLACK);
+}
+
+Elios_Private void add_button_to_window(UIWindow *win, const char *text, ButtonClickCallback callback) {
+    IfTrue (win->nbButtons >= MAX_UI_BUTTONS) return;
+
+    float y = win->rec.y + WINDOW_PADDING + (win->nbButtons * (BUTTON_HEIGHT + BUTTON_SPACING)) + 20.f;
+
+    win->buttons[win->nbButtons++] = (UIButton){
+        .rec = { win->rec.x + WINDOW_PADDING, y, win->rec.width - 2 * WINDOW_PADDING, BUTTON_HEIGHT },
+        .text = text,
+        .color = GetColor(0xFFFFFFFF),
+        .callback = callback
+    };
+}
+
+Elios_Private void add_labeled_text_to_window(UIWindow *win, const char *label, const char *value, DynamicTextCallback dynamicTextCallback) {
+    IfTrue (win->nbTexts >= MAX_LABELED_TEXT) return;
+
+    float y = win->rec.y + 20 + win->nbTexts * 20.f;
+
+    win->texts[win->nbTexts++] = (UILabeledText){
+        .label = { .pos = { win->rec.x + 10, y }, .staticText = label, .size = FONT_SIZE, .color = GRAY, .dynamicText = dynamicTextCallback },
+        .content = { .pos = { win->rec.x + 20, y + 10 }, .staticText = value, .size = FONT_SIZE, .color = WHITE }
+    };
+}
+
+Elios_Private void render_window(UIWindow *win) {
+    float height = (win->toggled) ? (win->nbButtons * (BUTTON_HEIGHT + BUTTON_SPACING) + 30.f) + (win->nbTexts * FONT_SIZE_SPACING) : 20.f;
+    win->rec.height = height;
+
+    DrawRectangleRec(win->rec, GetColor(0x444444CC));
+    DrawRectangleLinesEx(win->rec, 1, GetColor(0x888888FF));
+    DrawText(win->title, win->rec.x + 20, win->rec.y + 5, 8, WHITE);
+    render_button(&win->toggle);
+
+    IfTrue (win->toggled) {
+        ForRange (int32, i, 0, win->nbButtons)
+            render_button(&win->buttons[i]);
+        EForRange;
+        ForRange (int32, i, 0, win->nbTexts)
+        	const char *text = win->texts[i].label.dynamicText ? win->texts[i].label.dynamicText() : win->texts[i].label.staticText;
+            DrawText(win->texts[i].label.staticText, win->texts[i].label.pos.x, win->texts[i].label.pos.y, FONT_SIZE, win->texts[i].label.color);
+            DrawText(text, win->texts[i].content.pos.x, win->texts[i].content.pos.y, FONT_SIZE, win->texts[i].content.color);
+        EForRange;
+    }
+}
+
+Elios_Private void update_window(UIWindow *win) {
+    IfTrue (is_button_clicked(&win->toggle)) win->toggled = !win->toggled;
+    IfFalse (win->toggled) return;
+
+    ForRange (int32, i, 0, win->nbButtons)
+        IfTrue (is_button_clicked(&win->buttons[i]) && win->buttons[i].callback) {
+            win->buttons[i].callback(NULL);
+        }
+    EForRange;
+}
+
+Elios_Private c_string get_fps_text() {
+    static char buffer[16];
+    snprintf(buffer, sizeof(buffer), "%d", GetFPS());
+    return buffer;
 }
 
 /**
- * Public functions ...
+ * Initialization...
  */
 
-Elios_Private void render_sections_bar() {
-	Rectangle rect = {
-		.x = 10.f,
-		.y = 10.f,
-		.width = SIDE_BAR_WIDTH,
-		.height = (float) GetScreenHeight() - 20.f
-	};
-	DrawRectangleRec(rect, GetColor(0x77777799));
+Elios_Private void init_left_panel() {
+    leftPanel = (UIWindow){
+        .title = "Systems",
+        .rec = { 10, 10, 120, 0 },
+        .toggle = {
+            .rec = { 14, 14, 10, 10 },
+            .text = "^",
+            .color = GetColor(0xFFFFFFFF),
+            .callback = NULL
+        },
+        .toggled = false,
+    };
+    leftPanel.toggle.callback = NULL;
 
-	render_button(&change_mode_button);
-	render_button(&save_state_button);
-	render_button(&reload_state_button);
+    add_button_to_window(&leftPanel, "Change mode",  change_mode_callback);
+    add_button_to_window(&leftPanel, "Save state",   save_engine_state_callback);
+    add_button_to_window(&leftPanel, "Reload state", reload_engine_state_callback);
 }
 
+Elios_Private void init_right_panel() {
+    rightPanel = (UIWindow){
+        .title = "System props",
+        .rec = { (float)GetScreenWidth() - 314, 14, 300, 50 },
+        .toggle = {
+            .rec = { (float)GetScreenWidth() - 310, 20, 10, 10 },
+            .text = "^",
+            .color = GetColor(0xFFFFFFFF),
+            .callback = NULL
+        },
+        .toggled = true
+    };
+    rightPanel.toggle.callback = NULL;
+
+    add_labeled_text_to_window(&rightPanel, "Fps", "0", &get_fps_text);
+}
+ 
+/**
+ * Public functions...
+ */
+
 Elios_Public void init_ui() {
-	change_mode_button = (Button) {
-		.dimentions = (Rectangle) {
-			.x = 14.f,
-			.y = 14.f,
-			.width = SIDE_BAR_BUTTON_WIDTH,
-			.height = 22.f
-		},
-		.callback = &change_mode_callback,
-		.color = GetColor(0xFFFFFFFF),
-		.textContent = "Change mode",
-	};
-
-	save_state_button = (Button) {
-		.dimentions = (Rectangle) {
-			.x = 14.f,
-			.y = 40.f,
-			.width = SIDE_BAR_BUTTON_WIDTH,
-			.height = 22.f
-		},
-		.callback = &save_engine_state_callback,
-		.color = GetColor(0xFFFFFFFF),
-		.textContent = "Save state",
-	};
-
-	reload_state_button = (Button) {
-		.dimentions = (Rectangle) {
-			.x = 14.f,
-			.y = 66.f,
-			.width = SIDE_BAR_BUTTON_WIDTH,
-			.height = 22.f
-		},
-		.callback = &reload_engine_state_callback,
-		.color = GetColor(0xFFFFFFFF),
-		.textContent = "Reload state",
-	};
+    init_left_panel();
+    init_right_panel();
 }
 
 Elios_Public void render_ui() {
-	render_sections_bar();
+    render_window(&leftPanel);
+    render_window(&rightPanel);
 }
 
 Elios_Public void update_ui() {
-	IfTrue (is_mouse_clicking_button(&change_mode_button)) {
-		change_mode_button.callback(NULL);
-	}
-
-	IfTrue (is_mouse_clicking_button(&save_state_button)) {
-		save_state_button.callback(NULL);
-	}
-
-	IfTrue (is_mouse_clicking_button(&reload_state_button)) {
-		reload_state_button.callback(NULL);
-	}
+    update_window(&leftPanel);
+    update_window(&rightPanel);
 }
 
 Elios_Public void destroy_ui() {
-	
+    // Nothing to do yet
 }

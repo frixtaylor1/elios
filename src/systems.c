@@ -5,67 +5,14 @@
 #include <raylib/raymath.h>
 #include <raylib/rlgl.h>
 #include <ui/ui.h>
+#include <camera/camera.h>
 #include <stdio.h>
 
-
-Elios_Private Camera3D camera = {
-    .position = { 50.0f, 50.0f, 150.0f },
-    .target = { 0.0f, 0.0f, 0.0f },
-    .up = { 0.0f, 1.0f, 0.0f },
-    .fovy = 45.0f,
-    .projection = CAMERA_PERSPECTIVE
-};
-
-Elios_Private int cameraMode = CAMERA_FIRST_PERSON;
-
-Elios_Public Mesh     cubeMesh = {0};
-Elios_Public Material cubeMaterial = {0};
-
-Elios_Private void update_camera() {
-    IfTrue (IsKeyPressed(KEY_ONE)) {
-        cameraMode = CAMERA_FREE;
-        camera.up = (Vector3){ 0.0f, 3.0f, 0.0f };
-    }
-
-    IfTrue (IsKeyPressed(KEY_TWO)) {
-        cameraMode = CAMERA_FIRST_PERSON;
-        camera.up = (Vector3){ 0.0f, 3.0f, 0.0f };
-    }
-
-    IfTrue (IsKeyPressed(KEY_THREE)) {
-        cameraMode = CAMERA_THIRD_PERSON;
-        camera.up = (Vector3){ 0.0f, 3.0f, 0.0f };
-    }
-
-    IfTrue (IsKeyPressed(KEY_FOUR)) {
-        cameraMode = CAMERA_ORBITAL;
-        camera.up = (Vector3){ 0.0f, 3.0f, 0.0f };
-    }
-
-    IfTrue (IsKeyPressed(KEY_P) && camera.projection == CAMERA_PERSPECTIVE) {
-        cameraMode = CAMERA_THIRD_PERSON;
-        camera.position = (Vector3){ 0.0f, 2.0f, -100.0f };
-        camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };
-        camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
-        camera.projection = CAMERA_ORTHOGRAPHIC;
-        camera.fovy = 20.0f;
-    } else
-    IfTrue (IsKeyPressed(KEY_P) && camera.projection == CAMERA_ORTHOGRAPHIC)
-    {
-        cameraMode = CAMERA_THIRD_PERSON;
-        camera.position = (Vector3){ 0.0f, 2.0f, 10.0f };
-        camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };
-        camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
-        camera.projection = CAMERA_PERSPECTIVE;
-        camera.fovy = 60.0f;
-    }
-
-    UpdateCamera(&camera, cameraMode);
-}
+Elios_Public  Mesh     cubeMesh     = {0};
+Elios_Public  Material cubeMaterial = {0};
 
 Elios_Public void physics_system(int threadId, int start, int end) {
     float dt = GetFrameTime();
-
 
     ForRange (int, id, start, end)
         Entity *e = get_entity(id);
@@ -96,12 +43,32 @@ Elios_Public void physics_system(int threadId, int start, int end) {
     (void) threadId;
 }
 
+Elios_Private void render_grid(Vector3 pos, int slices, float spacing)
+{
+    int halfSlices = slices / 2;
+    rlBegin(RL_LINES);
+        ForRange (int, i, -halfSlices, halfSlices + 1)
+            /** Different colors for the central axies */
+            IfTrue (i == 0) rlColor3f(0.5f, 0.5f, 0.5f);
+            else rlColor3f(0.75f, 0.75f, 0.75f);
+
+            /** Lines paralles to z axis */
+            rlVertex3f(pos.x + i * spacing, pos.y, pos.z - halfSlices * spacing);
+            rlVertex3f(pos.x + i * spacing, pos.y, pos.z + halfSlices * spacing);
+
+            /** Lines paralles to z axis */
+            rlVertex3f(pos.x - halfSlices * spacing, pos.y, pos.z + i * spacing);
+            rlVertex3f(pos.x + halfSlices * spacing, pos.y, pos.z + i * spacing);
+        EForRange;
+    rlEnd();
+}
+
 Elios_Public void render_system() {
     update_camera();
 
     BeginDrawing();
-    ClearBackground(BLACK);
-    BeginMode3D(camera);
+    ClearBackground(GetColor(0x333388F3));
+    BeginMode3D(*get_camera());
 
     ForRange (int32, id, 0, get_nb_entities())
         const Entity *e = get_entity(id);
@@ -111,26 +78,24 @@ Elios_Public void render_system() {
         const RenderComponent *r = (const RenderComponent *)get_component(e, CMP_RENDER);
         const TransformComponent *t = (const TransformComponent *)get_component(e, CMP_TRANSFORM);
 
-        Vector2 pos = GetWorldToScreen(t->position, camera);
+        Vector2 pos = GetWorldToScreen(t->position, *get_camera());
         pos = Vector2Multiply(pos, (Vector2){.x = 0.9f, .y = 0.9f});
         bool visible = pos.x  >= 0 &&
                        pos.x <= GetScreenWidth() &&
                        pos.y  >= 0 &&
                        pos.y <= GetScreenHeight() && 
-                       Vector3Distance(camera.position, t->position) < 400;
+                       Vector3Distance(get_camera()->position, t->position) < 600;
 
-        IfFalse (visible) {
-            continue;
-        }
+        IfFalse (visible) continue;
 
         cubeMaterial.maps[MATERIAL_MAP_DIFFUSE].color = r->color;
         DrawMesh(cubeMesh, cubeMaterial, MatrixTranslate(t->position.x, t->position.y, t->position.z));
     EForRange;
 
-    // DrawGrid(20, 10.0f);
+    render_grid((Vector3){.x = -30.f, .y = -10.f, .z = 0.f}, 5, 5.0f);
+    render_grid((Vector3){.x = -5.f, .y = -5.f, .z = 0.f}, 5, 5.0f);
 
     EndMode3D();
-    DrawFPS(GetScreenWidth() - 100, 10);
     
     update_ui();
     render_ui();
@@ -141,7 +106,7 @@ Elios_Public void render_system() {
 Elios_Public void health_system(int threadId, int start, int end) {
     ForRange (int, id, start, end)
         Entity *e = get_entity(id);
-        IfFalse (!!e) continue;
+        IfFalse ((bool) e) continue;
         IfTrue (has_component(e, CMP_HEALTH)) {
             HealthComponent *hc = get_component(e, CMP_HEALTH);
             hc->health -= 1.1f;
@@ -163,39 +128,39 @@ Elios_Public void init_entities() {
     cubeMesh = GenMeshCube(.4f, .4f, .4f);
     cubeMaterial = LoadMaterialDefault();
 
-    ForRange (int32, _, 0, 7000)
-        int32 id = add_entity();
-        Entity *e = get_entity(id);
-        IfFalse ((bool) e) ThrowErr(1, "Null entity at ID: %d", id);
+    // ForRange (int32, _, 0, 7000)
+    //     int32 id = add_entity();
+    //     Entity *e = get_entity(id);
+    //     IfFalse ((bool) e) ThrowErr(1, "Null entity at ID: %d", id);
 
-        Vector3 pos = {
-            GetRandomValue(-5, 5),
-            GetRandomValue(-5, 5),
-            GetRandomValue(-5, 5)
-        };
+    //     Vector3 pos = {
+    //         GetRandomValue(-5, 5),
+    //         GetRandomValue(-5, 5),
+    //         GetRandomValue(-5, 5)
+    //     };
 
-        const Color col = ColorFromHSV(GetRandomValue(0, 360), 0.8f, 0.9f);
+    //     const Color col = ColorFromHSV(GetRandomValue(0, 360), 0.8f, 0.9f);
 
-        add_component(e, CMP_TRANSFORM, $void &(TransformComponent){
-            .position = pos,
-            .rotation = { 0, 0, 0 },
-            .scale = { 0.4f, .4f, .4f }
-        });
+    //     add_component(e, CMP_TRANSFORM, $void &(TransformComponent){
+    //         .position = pos,
+    //         .rotation = { 0, 0, 0 },
+    //         .scale = { 0.4f, .4f, .4f }
+    //     });
 
-        add_component(e, CMP_RENDER, $void &(RenderComponent){
-            .color = col
-        });
+    //     add_component(e, CMP_RENDER, $void &(RenderComponent){
+    //         .color = col
+    //     });
 
-        Vector3 vel = {
-            GetRandomValue(-10, 10) / 1.0f,
-            GetRandomValue(-10, 10) / 1.0f,
-            GetRandomValue(-10, 10) / 1.0f
-        };
+    //     Vector3 vel = {
+    //         GetRandomValue(-10, 10) / 1.0f,
+    //         GetRandomValue(-10, 10) / 1.0f,
+    //         GetRandomValue(-10, 10) / 1.0f
+    //     };
 
-        add_component(e, CMP_PHYSICS, $void &(PhysicsComponent){
-            .velocity = vel
-        });
-    EForRange;
+    //     add_component(e, CMP_PHYSICS, $void &(PhysicsComponent){
+    //         .velocity = vel
+    //     });
+    // EForRange;
 }
 
 Elios_Public void init_render_system() {

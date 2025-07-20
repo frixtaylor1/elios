@@ -22,7 +22,7 @@ Elios_Private Engine engine;
 Elios_Public void init_engine_obj() {
 	engine = (Engine) {
 		.props = (EngineProps) {
-			.name = "Elios Engine",
+			.name = "EEEEEEEEEEEEEEEEEEEE",
 			.fps = 0,
 			.maxfps = 144,
 			.timeElapsed = 0

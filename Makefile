@@ -25,6 +25,7 @@ OBJS        += $(BIN_DIR)/systems.o
 OBJS        += $(BIN_DIR)/ui.o
 OBJS        += $(BIN_DIR)/pool_alloc.o
 OBJS        += $(BIN_DIR)/engine.o
+OBJS        += $(BIN_DIR)/camera.o
 
 LIBS = -L$(DEPENDENCIES_DIR)/raylib -lraylib -lopengl32 -lgdi32 -lwinmm
 
@@ -64,6 +65,9 @@ $(BIN_DIR)/ui.o: $(SRC_DIR)/ui.c
 	$(OBJ_COMMAND)
 
 $(BIN_DIR)/engine.o: $(SRC_DIR)/engine.c
+	$(OBJ_COMMAND)
+
+$(BIN_DIR)/camera.o: $(SRC_DIR)/camera.c
 	$(OBJ_COMMAND)
 
 $(BIN_DIR):
