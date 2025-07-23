@@ -10,11 +10,12 @@ Elios_Private Camera3D camera = {
     .fovy = 45.0f,
     .projection = CAMERA_PERSPECTIVE
 };
-Elios_Private int32 cameraMode = CAMERA_FIRST_PERSON;
+Elios_Private int32 cameraMode  = CAMERA_FIRST_PERSON;
+Elios_Private bool  blockCamera = false;
 
 Elios_Private void change_camera_to_free_mode() {
-    cameraMode = CAMERA_FREE;
-    camera.up = (Vector3){ 0.0f, 3.0f, 0.0f };
+    cameraMode = CAMERA_CUSTOM;
+    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
 }
 
 Elios_Private void change_camera_to_first_person() {
@@ -108,6 +109,8 @@ Elios_Private void update_camera_by_condition(bool condition, CameraUpdateCallba
 }
 
 Elios_Public void update_camera() {
+    IfTrue (blockCamera) return;
+    
     update_camera_by_condition(IsKeyPressed(KEY_ONE), &change_camera_to_free_mode);
     update_camera_by_condition(IsKeyPressed(KEY_TWO), &change_camera_to_first_person);
     update_camera_by_condition(IsKeyPressed(KEY_THREE), &change_camera_to_third_person);
@@ -134,4 +137,12 @@ Elios_Public const Camera3D *get_camera() {
 
 Elios_Public int32 get_camera_mode() {
 	return cameraMode;
+}
+
+Elios_Public void disable_camera_control() {
+    blockCamera = true;
+}
+
+Elios_Public void enable_camera_control() {
+    blockCamera = false;
 }

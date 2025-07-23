@@ -1,7 +1,7 @@
 #include <components/components.h>
 #include <synch/synch.h>
 #include <allocators/alloc.h>
-#include <stdio.h>
+#include <utility/file.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -12,7 +12,8 @@ c_string ComponentsName[CMP_COUNT] = {
     [CMP_COLLISION] = "Collision",
     [CMP_RENDER]    = "Render",
     [CMP_TRANSFORM] = "Transform",
-    [CMP_PHYSICS]   = "Physics"
+    [CMP_PHYSICS]   = "Physics",
+    [CMP_TILE]      = "Tiles"
 };
 
 Elios_Private void *HealthComponents[MAX_ENTITIES]    = {0};
@@ -20,13 +21,15 @@ Elios_Private void *CollisionComponents[MAX_ENTITIES] = {0};
 Elios_Private void *RenderComponents[MAX_ENTITIES]    = {0};
 Elios_Private void *TransformComponents[MAX_ENTITIES] = {0};
 Elios_Private void *PhysicsComponents[MAX_ENTITIES]   = {0};
+Elios_Private void *TileComponents[MAX_ENTITIES]      = {0};
 
 Elios_Private void *ComponentsContainers[CMP_COUNT] = {
     [CMP_HEALTH]    = HealthComponents,
     [CMP_COLLISION] = CollisionComponents,
     [CMP_RENDER]    = RenderComponents,
     [CMP_TRANSFORM] = TransformComponents,
-    [CMP_PHYSICS]   = PhysicsComponents
+    [CMP_PHYSICS]   = PhysicsComponents,
+    [CMP_TILE]      = TileComponents
 };
 
 Elios_Private size_t ComponentSizes[CMP_COUNT] = {
@@ -43,6 +46,7 @@ Elios_Private Elios_Constructor void init_module() {
     mutex_init(CMP_RENDER);
     mutex_init(CMP_TRANSFORM);
     mutex_init(CMP_PHYSICS);
+    mutex_init(CMP_TILE);
 }
 
 Elios_Private Elios_Destructor void destroy_module() {
@@ -51,6 +55,7 @@ Elios_Private Elios_Destructor void destroy_module() {
     mutex_destroy(CMP_RENDER);
     mutex_destroy(CMP_TRANSFORM);
     mutex_destroy(CMP_PHYSICS);
+    mutex_destroy(CMP_TILE);
 }
 
 Elios_Private void *get_component_iml(void **componentContainer, int32 entityId, int32 mutexId) {
@@ -95,6 +100,10 @@ Elios_Public void *get_physics_component(int32 entityId) {
     return get_component_iml(PhysicsComponents, entityId, CMP_PHYSICS);
 }
 
+Elios_Public void *get_tile_component(int32 entityId) {
+    return get_component_iml(TileComponents, entityId, CMP_TILE);
+}
+
 Elios_Public void add_health_component(int32 entityId, void* content, int32 size) {
     assign_component_threadsafe(HealthComponents, entityId, content, size, CMP_HEALTH);
 }
@@ -115,16 +124,23 @@ Elios_Public void add_physics_component(int32 entityId, void* content, int32 siz
     assign_component_threadsafe(PhysicsComponents, entityId, content, size, CMP_PHYSICS);
 }
 
+Elios_Public void add_tile_component(int32 entityId, void *content, int32 size) {
+    assign_component_threadsafe(TileComponents, entityId, content, size, CMP_TILE);
+}
+
 Elios_Private void format_file_name(const char *base, char *out, size_t maxLen) {
     snprintf(out, maxLen, BIN_STATE_FILES_PATH, base);
 }
+
 
 Elios_Public void save_components_state() {
     char fileName[64];
 
     ForRange(int32, containerId, 0, CMP_COUNT) {
         format_file_name(ComponentsName[containerId], fileName, sizeof(fileName));
-        FILE *file = fopen(fileName, "wb");
+
+        Elios_Safe_File file = fopen(fileName, "wb");
+
         IfFalse ((bool) file) {
             ThrowErr(1, "Cannot open file for writing");
         }
@@ -138,8 +154,6 @@ Elios_Public void save_components_state() {
                 fwrite(container[entityId], componentSize, 1, file);
             }
         EForRange;
-
-        fclose(file);
     } EForRange;
 }
 
@@ -148,7 +162,9 @@ Elios_Public void reload_components_state() {
 
     ForRange(int32, containerId, 0, CMP_COUNT) {
         format_file_name(ComponentsName[containerId], fileName, sizeof(fileName));
-        FILE *file = fopen(fileName, "rb");
+
+        Elios_Safe_File file = fopen(fileName, "rb");
+
         IfFalse ((bool) file) {
             continue;
         }
@@ -165,7 +181,5 @@ Elios_Public void reload_components_state() {
             }
             container[entityId] = component;
         }
-
-        fclose(file);
     } EForRange;
 }

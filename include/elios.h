@@ -15,6 +15,7 @@
 #define Elios_Private static 
 #define Elios_Constructor __attribute__((constructor))
 #define Elios_Destructor __attribute__((destructor))
+#define Elios_Defer_With(callback) __attribute__((cleanup(callback)))
 
 #define Arr_Size(x) sizeof(x)/sizeof(x[0])
 #define Arr_SafeIterate(item, items) (item < &items[Arr_Size(items)])

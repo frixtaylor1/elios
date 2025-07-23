@@ -24,10 +24,10 @@ typedef void (*ActionComponent)(void *component);
  */
 
 Elios_Public void for_each_component_of_entity(const Entity *entity, ActionComponent callback);
-Elios_Public void add_component(Entity *entity, int component, void *content);
-Elios_Public void *get_component(const Entity *entity, int type);
-Elios_Public void remove_component(Entity *entity, int component);
-Elios_Public bool has_component(const Entity *entity, int component);
+Elios_Public void add_component(Entity *entity, int32 component, void *content);
+Elios_Public void *get_component(const Entity *entity, int32 type);
+Elios_Public void remove_component(Entity *entity, int32 component);
+Elios_Public bool has_component(const Entity *entity, int32 component);
 Elios_Public void inspect_entity(const Entity *entity);
 
 /*
@@ -44,6 +44,5 @@ Elios_Public void    init_entities();
 Elios_Public void    destroy_entities();
 Elios_Public void    save_entities_state();
 Elios_Public void    reload_entities_state();
-
 
 #endif // entity_H

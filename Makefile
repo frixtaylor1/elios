@@ -26,6 +26,7 @@ OBJS        += $(BIN_DIR)/ui.o
 OBJS        += $(BIN_DIR)/pool_alloc.o
 OBJS        += $(BIN_DIR)/engine.o
 OBJS        += $(BIN_DIR)/camera.o
+OBJS        += $(BIN_DIR)/file.o
 
 LIBS = -L$(DEPENDENCIES_DIR)/raylib -lraylib -lopengl32 -lgdi32 -lwinmm
 
@@ -70,11 +71,13 @@ $(BIN_DIR)/engine.o: $(SRC_DIR)/engine.c
 $(BIN_DIR)/camera.o: $(SRC_DIR)/camera.c
 	$(OBJ_COMMAND)
 
+$(BIN_DIR)/file.o: $(SRC_DIR)/file.c
+	$(OBJ_COMMAND)
+
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
 .PHONY: all clean release run
-
 
 clean:
 	rm -rf $(BIN_DIR)

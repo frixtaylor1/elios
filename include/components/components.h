@@ -24,6 +24,12 @@ typedef struct {
 } TransformComponent;
 
 typedef struct {
+    float           size;
+    int32           nbCells;
+    Vector3         position;
+} TileComponent;
+
+typedef struct {
     Vector3 velocity;
 } PhysicsComponent;
 
@@ -33,6 +39,7 @@ typedef enum {
     CMP_RENDER,
     CMP_TRANSFORM,
     CMP_PHYSICS,
+    CMP_TILE,
     CMP_COUNT
 } ComponentType;
 
@@ -43,12 +50,14 @@ Elios_Public void *get_collision_component(int32 entityId);
 Elios_Public void *get_transform_component(int32 entityId);
 Elios_Public void *get_render_component(int32 entityId);
 Elios_Public void *get_physics_component(int32 entityId);
+Elios_Public void *get_tile_component(int32 entityId);
 
 Elios_Public void add_health_component(int32 entityId, void *content, int32 size);
 Elios_Public void add_collision_component(int32 entityId, void *content, int32 size);
 Elios_Public void add_transform_component(int32 entityId, void *content, int32 size);
 Elios_Public void add_render_component(int32 entityId, void *content, int32 size);
 Elios_Public void add_physics_component(int32 entityId, void *content, int32 size);
+Elios_Public void add_tile_component(int32 entityId, void *content, int32 size);
 Elios_Public void save_components_state();
 Elios_Public void reload_components_state();
 

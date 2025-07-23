@@ -8,7 +8,7 @@
 #include <threads/threads.h>
 #include <entities/entity.h>
 #include <components/components.h>
-#include <stdio.h>
+#include <utility/file.h>
 #include <stdlib.h>
 
 #define ENTITIES_BIN_NAME "./app_cache/.stateEntities.bin"
@@ -62,7 +62,7 @@ Elios_Private void init_entity_manager() {
  */
 
 
-Elios_Public void add_component(Entity *entity, int component, void *content) {
+Elios_Public void add_component(Entity *entity, int32 component, void *content) {
   IfTrue (has_component(entity, component)) return;
   
   entity->components |= (1LL << component);
@@ -73,11 +73,12 @@ Elios_Public void add_component(Entity *entity, int component, void *content) {
     case CMP_COLLISION: add_collision_component(entity->id, content, sizeof(CollisionComponent)); break;
     case CMP_TRANSFORM: add_transform_component(entity->id, content, sizeof(TransformComponent)); break;
     case CMP_PHYSICS:   add_physics_component(entity->id, content, sizeof(PhysicsComponent));     break;
+    case CMP_TILE:      add_tile_component(entity->id, content, sizeof(TileComponent));           break;
     case CMP_COUNT:     break;
   }
 }
 
-Elios_Public void *get_component(const Entity *entity, int component) {
+Elios_Public void *get_component(const Entity *entity, int32 component) {
   IfTrue (has_component(entity, component)) {
     switch (component) {
       case CMP_HEALTH:    return get_health_component(entity->id);    break;
@@ -85,13 +86,14 @@ Elios_Public void *get_component(const Entity *entity, int component) {
       case CMP_COLLISION: return get_collision_component(entity->id); break;
       case CMP_TRANSFORM: return get_transform_component(entity->id); break;
       case CMP_PHYSICS:   return get_physics_component(entity->id);   break;
+      case CMP_TILE:      return get_tile_component(entity->id);      break;
       case CMP_COUNT:     break;
     }
   }
   return NULL;
 }
 
-Elios_Public void remove_component(Entity *entity, int component) {
+Elios_Public void remove_component(Entity *entity, int32 component) {
   IfTrue (has_component(entity, component)) {
     entity->components &= ~(1LL << component);
     void* ptr = get_component(entity, component);
@@ -99,7 +101,7 @@ Elios_Public void remove_component(Entity *entity, int component) {
   }
 }
 
-Elios_Public bool has_component(const Entity *entity, int component) {
+Elios_Public bool has_component(const Entity *entity, int32 component) {
   return entity->components & (1LL << component);
 }
 
@@ -177,32 +179,28 @@ Elios_Public void mark_to_remove_entity(const int32 id) {
 }
 
 Elios_Public void save_entities_state() {
-  FILE *file = fopen(ENTITIES_BIN_NAME, "wb");
+  Elios_Safe_File file = fopen(ENTITIES_BIN_NAME, "wb");
   IfFalse ((bool) file) ThrowErr(55, "Error opening file.");
 
   int32 writtenEntities = fwrite(entityManager.entities, sizeof(Entity), entityManager.nbEntities, file);
   
   IfFalse (writtenEntities == entityManager.nbEntities) {
-    fclose(file);
     ThrowErr(56, "Error writting file with entities state.");
   }
-  fclose(file);
 }
 
 Elios_Public void reload_entities_state() {
-    FILE *file = fopen(ENTITIES_BIN_NAME, "rb");
+    Elios_Safe_File file = fopen(ENTITIES_BIN_NAME, "rb");
     IfFalse ((bool) file) ThrowErr(55, "Error opening entity state file.");
 
     init_entity_manager();
 
     int32 read = fread(entityManager.entities, sizeof(Entity), MAX_ENTITIES, file);
 
-    fclose(file);
-
     int32 count = 0;
     ForRange (int32, i, 0, read)
-        IfTrue (entityManager.entities[i].alloced)
-            count++;
+      IfTrue (entityManager.entities[i].alloced)
+        count++;
     EForRange;
     entityManager.nbEntities = count;
 }

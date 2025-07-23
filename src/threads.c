@@ -13,7 +13,9 @@ typedef void (*SystemFunction)(int thread_id, int start, int end);
 
     #define Native_Handle HANDLE
     #define Native_Handle_Event HANDLE
-    #define Thread_Func DWORD WINAPI thread_func(LPVOID arg)
+    #define Thread_Func thread_func
+    #define Thread_Func_Ret_Type DWORD WINAPI
+    #define Thread_Func_Arg_Type LPVOID
 
     #define native_wait_for_signal(hHandle) WaitForSingleObject(hHandle, INFINITE)
 
@@ -40,7 +42,9 @@ typedef void (*SystemFunction)(int thread_id, int start, int end);
 
     #define Native_Handle pthread_t
     #define Native_Handle_Event sem_t
-    #define Thread_Func void* thread_func(void *arg)
+    #define Thread_Func thread_func
+    #define Thread_Func_Ret_Type void *
+    #define Thread_Func_Arg_Type void *
 
     #define native_wait_for_signal(sem) sem_wait(&sem)
 
@@ -68,7 +72,7 @@ static int thread_ids[NUM_THREADS];
 static SystemFunction current_function = NULL;
 static volatile int stop_threads = 0;
 
-Thread_Func {
+Thread_Func_Ret_Type Thread_Func(Thread_Func_Arg_Type arg) {
     int thread_id = *(int *)arg;
 
     WhileFalse (stop_threads) {

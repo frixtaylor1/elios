@@ -43,24 +43,63 @@ Elios_Public void physics_system(int threadId, int start, int end) {
     (void) threadId;
 }
 
-Elios_Private void render_grid(Vector3 pos, int slices, float spacing)
-{
-    int halfSlices = slices / 2;
+Elios_Private void draw_tile_grid(Vector3 center, Vector3 scale, float cellSize) {
+    int32 cellsX = (int)(scale.x / cellSize);
+    int32 cellsZ = (int)(scale.z / cellSize);
+
+    float startX = center.x - (scale.x / 2);
+    float startZ = center.z - (scale.z / 2);
+
     rlBegin(RL_LINES);
-        ForRange (int, i, -halfSlices, halfSlices + 1)
-            /** Different colors for the central axies */
-            IfTrue (i == 0) rlColor3f(0.5f, 0.5f, 0.5f);
-            else rlColor3f(0.75f, 0.75f, 0.75f);
+    rlColor4f(0.7f, 0.7f, 0.7f, 0.4f);
 
-            /** Lines paralles to z axis */
-            rlVertex3f(pos.x + i * spacing, pos.y, pos.z - halfSlices * spacing);
-            rlVertex3f(pos.x + i * spacing, pos.y, pos.z + halfSlices * spacing);
+    ForRange (int32, i, 0, cellsX + 1)
+        float x = startX + i * cellSize;
+        rlVertex3f(x, center.y + 0.01f, startZ);
+        rlVertex3f(x, center.y + 0.01f, startZ + scale.z);
+    EForRange;
 
-            /** Lines paralles to z axis */
-            rlVertex3f(pos.x - halfSlices * spacing, pos.y, pos.z + i * spacing);
-            rlVertex3f(pos.x + halfSlices * spacing, pos.y, pos.z + i * spacing);
-        EForRange;
+    ForRange (int32, j, 0, cellsZ + 1)
+        float z = startZ + j * cellSize;
+        rlVertex3f(startX, center.y + 0.01f, z);
+        rlVertex3f(startX + scale.x, center.y + 0.01f, z);
+    EForRange;
+
     rlEnd();
+}
+
+Elios_Private void render_grid(const Entity *e) {
+    IfTrue (has_component(e, CMP_TILE)) {
+        const TileComponent      *tile               = (const TileComponent *)get_component(e, CMP_TILE);
+        const TransformComponent *transformComponent = (const TransformComponent *)get_component(e, CMP_TRANSFORM);
+
+        Color tileColor = (Color){100, 150, 100, 40};
+        DrawCubeV(transformComponent->position, transformComponent->scale, tileColor);
+        draw_tile_grid(transformComponent->position, transformComponent->scale, tile->size);
+    }
+}
+
+Elios_Private bool is_in_viewport(Vector3 position) {
+    const Camera3D *cam = get_camera();
+
+    Vector3 toEntity = Vector3Subtract(position, cam->position);
+    float dist = Vector3Length(toEntity);
+
+    if (dist > 1000.f || dist < 0.01f) return false;
+
+    Vector3 forward = Vector3Normalize(Vector3Subtract(cam->target, cam->position));
+    float angle = Vector3Angle(toEntity, forward);
+
+    float fovY = 45.0f * DEG2RAD;
+    float aspect = (float)GetScreenWidth() / (float)GetScreenHeight();
+    float fovX = 2.0f * atanf(tanf(fovY / 2.0f) * aspect);
+
+    return angle <= (fovX / 2.0f);
+}
+
+Elios_Private void render_cube_mesh(const Vector3 *pos, const Color *color) {
+    cubeMaterial.maps[MATERIAL_MAP_DIFFUSE].color = *color;
+    DrawMesh(cubeMesh, cubeMaterial, MatrixTranslate(pos->x, pos->y, pos->z));
 }
 
 Elios_Public void render_system() {
@@ -73,27 +112,16 @@ Elios_Public void render_system() {
     ForRange (int32, id, 0, get_nb_entities())
         const Entity *e = get_entity(id);
         
-        IfFalse (((bool) e) && (has_component(e, CMP_TRANSFORM) || has_component(e, CMP_RENDER))) continue;
+        IfFalse (((bool) e) && (has_component(e, CMP_RENDER))) continue;
 
-        const RenderComponent *r = (const RenderComponent *)get_component(e, CMP_RENDER);
+        const RenderComponent    *r = (const RenderComponent *)get_component(e, CMP_RENDER);
         const TransformComponent *t = (const TransformComponent *)get_component(e, CMP_TRANSFORM);
 
-        Vector2 pos = GetWorldToScreen(t->position, *get_camera());
-        pos = Vector2Multiply(pos, (Vector2){.x = 0.9f, .y = 0.9f});
-        bool visible = pos.x  >= 0 &&
-                       pos.x <= GetScreenWidth() &&
-                       pos.y  >= 0 &&
-                       pos.y <= GetScreenHeight() && 
-                       Vector3Distance(get_camera()->position, t->position) < 600;
+        IfFalse (is_in_viewport(t->position)) continue;
 
-        IfFalse (visible) continue;
-
-        cubeMaterial.maps[MATERIAL_MAP_DIFFUSE].color = r->color;
-        DrawMesh(cubeMesh, cubeMaterial, MatrixTranslate(t->position.x, t->position.y, t->position.z));
+        render_cube_mesh(&t->position, &r->color);
+        render_grid(e);
     EForRange;
-
-    render_grid((Vector3){.x = -30.f, .y = -10.f, .z = 0.f}, 5, 5.0f);
-    render_grid((Vector3){.x = -5.f, .y = -5.f, .z = 0.f}, 5, 5.0f);
 
     EndMode3D();
     
@@ -114,14 +142,6 @@ Elios_Public void health_system(int threadId, int start, int end) {
     EForRange;
     (void) threadId;
 }
-
-// Elios_Private void synch_entities() {
-//     ForRange (int32, id, 0, get_nb_entities())
-//         const Entity *e = get_entity(id);
-//         IfFalse ((bool) e && !e->toRemove && (has_component(e, CMP_TRANSFORM) || has_component(e, CMP_RENDER)))
-//             continue;
-//     EForRange;
-// }
 
 Elios_Public void init_entities() {
     rlSetClipPlanes(0.1, 3000.0);
